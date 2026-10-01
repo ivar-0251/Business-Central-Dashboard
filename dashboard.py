@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 import json
 import re
+from urllib.parse import quote
 from get_calendar import get_calendar_events
 
 load_dotenv()  # Load environment variables from .env file
@@ -87,10 +88,25 @@ def bereken_ordertypes(week_orders):
 # Flask Application
 #######################################
 
-from flask import Flask, abort, render_template, redirect, url_for
+from flask import Flask, abort, render_template, redirect, request, url_for
 
 app = Flask(__name__)
 API_DATA_FILE = Path(__file__).with_name('salesHeaders.json')
+
+
+def business_central_order_url(order_number):
+    base_url = (
+        f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
+        f"/{env['api_environment']}"
+    )
+    company = quote(env.get('api_company_name', 'Verver Export B.V.'), safe='')
+    order_filter = quote(f"'No.' IS '{order_number}'", safe="'")
+    return f"{base_url}?company={company}&page=42&filter={order_filter}"
+
+
+@app.context_processor
+def inject_business_central_helpers():
+    return {'business_central_order_url': business_central_order_url}
 
 
 def load_dashboard_data():
@@ -281,10 +297,9 @@ def kiosk_display_2():
         last_updated=last_updated,
     )
 
-@app.route('/kiosk/display-3')
-def kiosk_display_3():
+def load_calendar_view_data(week_offset=0):
     today = date.today()
-    week_start = today - timedelta(days=today.weekday())
+    week_start = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     week_end = week_start + timedelta(days=5)
     weekday_names = [
         'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag',
@@ -293,7 +308,7 @@ def kiosk_display_3():
     events_by_date = {week_start + timedelta(days=offset): [] for offset in range(5)}
     spanning_events = []
 
-    for event in get_calendar_events():
+    for event in get_calendar_events(week_start):
         event['color_class'] = get_calendar_event_color(event)
         start_text = event.get('start', {}).get('dateTime', '')
         end_text = event.get('end', {}).get('dateTime', '')
@@ -330,6 +345,28 @@ def kiosk_display_3():
         }
         for event_date, events in events_by_date.items()
     ]
+
+    return calendar_days, spanning_events
+
+
+@app.route('/agenda')
+def agenda():
+    week_offset = request.args.get('week_offset', default=0, type=int)
+    calendar_days, spanning_events = load_calendar_view_data(week_offset)
+    selected_week = date.today() - timedelta(days=date.today().weekday()) + timedelta(weeks=week_offset)
+
+    return render_template(
+        'agenda.html',
+        calendar_days=calendar_days,
+        spanning_events=spanning_events,
+        current_week=selected_week.isocalendar().week,
+        week_offset=week_offset,
+    )
+
+
+@app.route('/kiosk/display-3')
+def kiosk_display_3():
+    calendar_days, spanning_events = load_calendar_view_data()
 
     return render_template(
         'kiosk_display_3.html',

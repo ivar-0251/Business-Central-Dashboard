@@ -6,6 +6,14 @@
     <title>{% block title %}Verver Export Dashboard{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='base.css', v=3) }}">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='verver.png') }}">
+    <style>
+        body {
+            background-image: url("{{ url_for('static', filename='grass_background.png') }}");
+            background-position: center;
+            background-attachment: fixed;
+            background-size: cover;
+        }
+    </style>
 </head>
 <body>
     {% block webapp %}
@@ -25,6 +33,7 @@
             <nav class="site-nav" aria-label="Hoofdnavigatie">
                 <a href="{{ url_for('dashboard') }}">Colli</a>
                 <a href="{{ url_for('verzendingen') }}">Verzendingen</a>
+                <a href="{{ url_for('agenda') }}">Agenda</a>
             </nav>
         </header>
 

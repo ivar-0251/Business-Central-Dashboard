@@ -11,12 +11,13 @@ CLIENT_SECRET = env["client_secret_calendar"]
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 SCOPE = ["https://graph.microsoft.com/.default"]
 
+app = msal.ConfidentialClientApplication(
+    CLIENT_ID,
+    authority=AUTHORITY,
+    client_credential=CLIENT_SECRET
+)
+
 def get_access_token():
-    app = msal.ConfidentialClientApplication(
-        CLIENT_ID,
-        authority=AUTHORITY,
-        client_credential=CLIENT_SECRET
-    )
     result = app.acquire_token_for_client(scopes=SCOPE)
     if "access_token" in result:
         return result["access_token"]

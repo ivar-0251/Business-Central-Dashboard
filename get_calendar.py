@@ -3,10 +3,29 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import requests
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from time import monotonic
 from _acces_token_calendar import get_access_token
 
-def get_calendar_events():
+_CACHE_TTL_SECONDS = 60
+_events_cache = {}
+
+
+def get_calendar_events(week_start=None):
+    if week_start is None:
+        week_start = date.today() - timedelta(days=date.today().weekday())
+
+    cached = _events_cache.get(week_start)
+    if cached and monotonic() - cached[0] < _CACHE_TTL_SECONDS:
+        return cached[1]
+
+    events = _fetch_calendar_events(week_start)
+    _events_cache[week_start] = (monotonic(), events)
+    return events
+
+
+def _fetch_calendar_events(week_start):
+
     token = get_access_token()
     headers = {
         "Authorization": f"Bearer {token}",
@@ -14,19 +33,16 @@ def get_calendar_events():
     }
 
     mailbox = env["mailbox_calendar"]
-    now = datetime.now()
-    start_of_week = (now - timedelta(days=now.weekday())).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    start = start_of_week.isoformat()
-    end = (now + timedelta(days=14)).isoformat()
-    print(f"Fetching events from {start} ({datetime.now()}) to {end} ({datetime.now() + timedelta(days=14)}) for mailbox {mailbox}")
+    start = datetime.combine(week_start, datetime.min.time()).isoformat()
+    end = datetime.combine(week_start + timedelta(days=7), datetime.min.time()).isoformat()
+    print(f"Fetching events from {start} to {end} for mailbox {mailbox}")
 
     url = f"https://graph.microsoft.com/v1.0/users/{mailbox}/calendarview"
     params = {
         "startDateTime": start,
         "endDateTime": end,
         "$orderby": "start/dateTime",
+        "$select": "subject,start,end,isAllDay,location",
     }
 
     events = []

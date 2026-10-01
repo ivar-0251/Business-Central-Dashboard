@@ -4,8 +4,8 @@
     --paper: #eef3f1;
     --white: #ffffff;
     --line: #d7e1df;
-    --accent: #e56d3f;
-    --accent-green: #1f8a70;
+    --accent: #f29200;
+    --accent-green: #458e32;
     --warning-red: #c0392b;
     --soft-green: #e7eeec;
     --calendar-office: #dceefa;
@@ -309,6 +309,53 @@ h3 {
     gap: 24px;
     padding: 42px 0 24px;
     border-bottom: 2px solid var(--ink);
+}
+
+.agenda-navigation {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.agenda-navigation .period {
+    margin: 0;
+}
+
+.agenda-stage {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.agenda-stage > .panel {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 0;
+}
+
+.agenda-arrow {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--white);
+    background: var(--accent);
+    cursor: pointer;
+    font: 28px/1 Arial, sans-serif;
+}
+
+.agenda-arrow:hover,
+.agenda-arrow:focus-visible {
+    background: #c9522e;
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+}
+
+.agenda-arrow[hidden] {
+    display: none;
 }
 
 .kiosk-shell {
@@ -1146,6 +1193,16 @@ th:last-child {
 .progress-ring-fill {
     fill: none;
     stroke-width: 14;
+    transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+.ring-clickable {
+    cursor: pointer;
+}
+
+.ring-clickable:hover {
+    opacity: 0.72;
+    stroke-width: 18;
 }
 
 .progress-ring-track {

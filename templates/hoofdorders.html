@@ -22,7 +22,7 @@
             <summary>
                 <div class="order-summary">
                     <div class="order-summary-main order-cell">
-                        <span class="order-number">{{ ordergroep.nummer }}</span>
+                        <a class="order-number" href="{{ business_central_order_url(ordergroep.nummer) }}" target="_blank" rel="noopener">{{ ordergroep.nummer }}</a>
                         <span class="order-name">{{ ordergroep.naam }}</span>
                     </div>
                     <div class="order-summary-stats">
@@ -40,7 +40,7 @@
                 <div class="order-list">
                     {% for order in ordergroep.meeliftorders %}
                     <div class="order-cell">
-                        <span class="order-number">{{ order.nummer }}</span>
+                        <a class="order-number" href="{{ business_central_order_url(order.nummer) }}" target="_blank" rel="noopener">{{ order.nummer }}</a>
                         <span class="order-name">{{ order.naam }}</span>
                     </div>
                     {% endfor %}
