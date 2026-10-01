@@ -20,6 +20,13 @@ load_dotenv()  # Load environment variables from .env file
 #######################################
 
 def get_calendar_event_color(event):
+    """Classify a calendar event by its subject.
+
+    **Parameters:**
+    - `event`: Calendar event dictionary containing a `subject` value.
+
+    **Returns:** The CSS class name used to display the event.
+    """
     subject = event.get('subject', '')
     has_word = lambda word: re.search(rf'\b{word}\b', subject, re.IGNORECASE)
     has_word_pair = lambda first, second: re.search(
@@ -40,6 +47,13 @@ def get_calendar_event_color(event):
 
 
 def get_calendar_event_sort_key(event):
+    """Build the sort key for a calendar event.
+
+    **Parameters:**
+    - `event`: Calendar event dictionary with `color_class` and optional start data.
+
+    **Returns:** A tuple that sorts events by category and start time.
+    """
     color_order = {
         'calendar-event-office': 0,
         'calendar-event-home-working': 1,
@@ -53,6 +67,13 @@ def get_calendar_event_sort_key(event):
 
 
 def sort_calendar_events(events):
+    """Sort normal calendar events while preserving free events in place.
+
+    **Parameters:**
+    - `events`: Iterable of calendar event dictionaries.
+
+    **Returns:** A list with sortable events ordered by category and start time.
+    """
     sortable_events = sorted(
         (event for event in events if event['color_class'] != 'calendar-event-free'),
         key=get_calendar_event_sort_key,
@@ -64,7 +85,13 @@ def sort_calendar_events(events):
     ]
 
 def bereken_ordertypes(week_orders):
-    """Count main, accompanying, and standalone orders for one week."""
+    """Count main, accompanying, and standalone orders for one week.
+
+    **Parameters:**
+    - `week_orders`: Pandas DataFrame containing order and main-order columns.
+
+    **Returns:** A dictionary with counts for each order type.
+    """
     if 'Nr.' not in week_orders or 'Hoofdorder' not in week_orders:
         return {
             'hoofdorders': 0,
@@ -95,6 +122,13 @@ API_DATA_FILE = Path(__file__).with_name('salesHeaders.json')
 
 
 def business_central_order_url(order_number):
+    """Build a link to an order in Business Central.
+
+    **Parameters:**
+    - `order_number`: The order number used in the Business Central filter.
+
+    **Returns:** A URL that opens page 42 filtered to the given order.
+    """
     base_url = (
         f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
         f"/{env['api_environment']}"
@@ -106,10 +140,22 @@ def business_central_order_url(order_number):
 
 @app.context_processor
 def inject_business_central_helpers():
+    """Expose Business Central URL helpers to all Jinja templates.
+
+    **Parameters:** None.
+
+    **Returns:** A template context dictionary containing the order URL helper.
+    """
     return {'business_central_order_url': business_central_order_url}
 
 
 def load_dashboard_data():
+    """Load cached Business Central data and calculate dashboard summaries.
+
+    **Parameters:** None.
+
+    **Returns:** A tuple containing dashboard data and its last-updated timestamp.
+    """
     try:
         with API_DATA_FILE.open('r', encoding='utf-8') as input_file:
             payload = json.load(input_file)
@@ -298,6 +344,13 @@ def kiosk_display_2():
     )
 
 def load_calendar_view_data(week_offset=0):
+    """Load and group calendar events for a selected work week.
+
+    **Parameters:**
+    - `week_offset`: Number of weeks relative to the current week.
+
+    **Returns:** A tuple containing calendar days and spanning events.
+    """
     today = date.today()
     week_start = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     week_end = week_start + timedelta(days=5)
