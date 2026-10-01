@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Week {{ week.week }}{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+    <div>
+        <a class="back-link" href="{{ url_for('dashboard') }}">&larr; Terug naar dashboard</a>
+        <p class="eyebrow">Weekoverzicht</p>
+        <h1>Leverweek {{ week.week }}</h1>
+    </div>
+</section>
+
+<section class="metrics">
+    <!-- 2 kaarten die allebei 2 plekken in beslag nemen, 1 met het aantal orders en 1 met het aantal colli -->
+    <article class="metric metric-wide metric-green"><span class="metric-label">Orders</span><strong class="metric-value">{{ week.orders }}</strong></article>
+    <article class="metric metric-wide"><span class="metric-label">Colli</span><strong class="metric-value">{{ week.colli }}</strong></article>
+</section>
+
+<section class="metrics" aria-label="Samenvatting week {{ week.week }}">
+    <a class="metric metric-link" href="{{ url_for('hoofdorders', weeknummer=week.week) }}"><span class="metric-label">Hoofd orders</span><strong class="metric-value">{{ week.hoofdorders }}</strong><span class="metric-action">Bekijk overzicht</span></a>
+    <article class="metric metric-green"><span class="metric-label">Meelift orders</span><strong class="metric-value">{{ week.meeliftorders }}</strong></article>
+    <article class="metric"><span class="metric-label">Losstaande orders</span><strong class="metric-value">{{ week.losstaande_orders }}</strong></article>
+    <article class="metric metric-green"><span class="metric-label">Gemiddeld per order</span><strong class="metric-value">{{ week.gemiddelde }}</strong></article>
+</section>
+
+<section class="panel detail-grid week-overview-grid">
+    <div>
+        <h2>Kratten per order</h2>
+        {% set max_orders = week.frequentie | map(attribute='aantal_orders') | max if week.frequentie else 0 %}
+        {% if week.frequentie %}
+        <div class="line-chart" role="img" aria-label="Lijndiagram van kratten per order voor week {{ week.week }}">
+            <svg viewBox="0 0 760 360" preserveAspectRatio="xMidYMid meet">
+                <title>Kratten per order in week {{ week.week }}</title>
+                <line class="line-chart-gridline" x1="50" y1="40" x2="710" y2="40"></line>
+                <line class="line-chart-gridline" x1="50" y1="100" x2="710" y2="100"></line>
+                <line class="line-chart-gridline" x1="50" y1="160" x2="710" y2="160"></line>
+                <line class="line-chart-gridline" x1="50" y1="220" x2="710" y2="220"></line>
+                <line class="line-chart-axis" x1="50" y1="280" x2="710" y2="280"></line>
+                <text class="line-chart-axis-label" x="42" y="45" text-anchor="end">{{ max_orders }}</text>
+                <text class="line-chart-axis-label" x="42" y="105" text-anchor="end">{{ (max_orders * 0.75) | round | int }}</text>
+                <text class="line-chart-axis-label" x="42" y="165" text-anchor="end">{{ (max_orders * 0.5) | round | int }}</text>
+                <text class="line-chart-axis-label" x="42" y="225" text-anchor="end">{{ (max_orders * 0.25) | round | int }}</text>
+                <text class="line-chart-axis-label" x="42" y="285" text-anchor="end">0</text>
+                <polyline class="line-chart-source" points="{% for row in week.frequentie %}{% if week.frequentie | length == 1 %}380{% else %}{{ ((loop.index0 / ((week.frequentie | length) - 1)) * 660 + 50) | round(2) }}{% endif %},{{ (280 - (row.aantal_orders / max_orders * 240)) | round(2) }} {% endfor %}"></polyline>
+                <path class="line-chart-line" d=""></path>
+                {% for row in week.frequentie %}
+                {% if week.frequentie | length == 1 %}
+                {% set point_x = 380 %}
+                {% else %}
+                {% set point_x = ((loop.index0 / ((week.frequentie | length) - 1)) * 660 + 50) | round(2) %}
+                {% endif %}
+                {% set point_y = (280 - (row.aantal_orders / max_orders * 240)) | round(2) %}
+                <circle class="line-chart-point" cx="{{ point_x }}" cy="{{ point_y }}" r="5">
+                    <title>{{ row.aantal_kratten }} kratten per order: {{ row.aantal_orders }} orders</title>
+                </circle>
+                {% if loop.first or loop.last or loop.index0 % 5 == 0 %}
+                <text class="line-chart-label" x="{{ point_x }}" y="305" text-anchor="middle">{{ row.aantal_kratten }}</text>
+                {% endif %}
+                {% endfor %}
+                <text class="line-chart-caption" x="380" y="348" text-anchor="middle">Kratten per order</text>
+                <text class="line-chart-caption" transform="translate(12 160) rotate(-90)" text-anchor="middle">Orders</text>
+            </svg>
+        </div>
+        <script>
+            document.querySelectorAll(".line-chart").forEach((chart) => {
+                const source = chart.querySelector(".line-chart-source");
+                const line = chart.querySelector(".line-chart-line");
+                const points = source.points;
+
+                if (points.length === 1) {
+                    line.setAttribute("d", `M ${points[0].x} ${points[0].y}`);
+                } else {
+                    let path = `M ${points[0].x} ${points[0].y}`;
+                    for (let index = 0; index < points.length - 1; index += 1) {
+                        const previous = points[index - 1] || points[index];
+                        const current = points[index];
+                        const next = points[index + 1];
+                        const following = points[index + 2] || next;
+                        const controlOne = {
+                            x: current.x + (next.x - previous.x) / 6,
+                            y: current.y + (next.y - previous.y) / 6,
+                        };
+                        const controlTwo = {
+                            x: next.x - (following.x - current.x) / 6,
+                            y: next.y - (following.y - current.y) / 6,
+                        };
+                        path += ` C ${controlOne.x} ${controlOne.y}, ${controlTwo.x} ${controlTwo.y}, ${next.x} ${next.y}`;
+                    }
+                    line.setAttribute("d", path);
+                }
+            });
+        </script>
+        {% else %}
+        <p class="muted">Geen gegevens beschikbaar.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

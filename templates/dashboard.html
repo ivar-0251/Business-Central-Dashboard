@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Colli-dashboard{% endblock %}
+
+{% block content %}
+{% set weeks = data.weekgegevens %}
+{% set total_orders = weeks | sum(attribute='orders') %}
+{% set total_colli = weeks | sum(attribute='colli') %}
+{% set max_colli = weeks | map(attribute='colli') | max if weeks else 0 %}
+
+<section class="dashboard-heading">
+    <div>
+        <p class="eyebrow">Verkooporders</p>
+        <h1>Colli</h1>
+    </div>
+    <p class="period">Vanaf week {{ current_week }}<br>{{ weeks | length }} leverweken in beeld</p>
+</section>
+
+<section class="metrics" aria-label="Samenvatting">
+    <article class="metric"><span class="metric-label">Komende orders</span><strong class="metric-value">{{ total_orders }}</strong></article>
+    <article class="metric metric-green"><span class="metric-label">Komende colli</span><strong class="metric-value">{{ total_colli }}</strong></article>
+    <article class="metric"><span class="metric-label">Gemiddeld per order</span><strong class="metric-value">{{ (total_colli / total_orders) | round(1) if total_orders else 0 }}</strong></article>
+    <article class="metric metric-green"><span class="metric-label">Leverweken geladen</span><strong class="metric-value">{{ weeks | length }}</strong></article>
+</section>
+
+<section class="panel">
+    <h2>Colli per leverweek</h2>
+    <p class="warning-note">Waarschuwing vanaf 9.000 colli</p>
+    <div class="chart">
+        {% for week in weeks %}
+        <div class="bar-row">
+            <div class="bar-label"><span>Week {{ week.week }}</span><strong>{{ week.colli }} colli</strong></div>
+            <a class="bar-track" href="{{ url_for('week_overview', weeknummer=week.week) }}" aria-label="Bekijk alle details van week {{ week.week }}">
+                <span class="bar-fill{% if week.colli > 9000 %} bar-fill-warning{% endif %}" style="width: {{ (week.colli / max_colli * 100) if max_colli else 0 }}%"></span>
+            </a>
+        </div>
+        {% else %}
+        <p class="muted">Geen komende leverweken gevonden.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+<aside class="kiosk-calendar" aria-label="Kalender">
+    <p class="eyebrow">Vandaag</p>
+    <div class="kiosk-calendar-date">
+        <strong id="kiosk-calendar-day">--</strong>
+        <div>
+            <span id="kiosk-calendar-weekday">Laden</span>
+            <span id="kiosk-calendar-month">Laden</span>
+        </div>
+    </div>
+    <div class="kiosk-calendar-week">
+        <span>Weeknummer</span>
+        <strong>{{ current_week }}</strong>
+    </div>
+</aside>
+
+<script>
+    (() => {
+        const today = new Date();
+        const weekdays = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
+        const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+        document.getElementById('kiosk-calendar-day').textContent = today.getDate();
+        document.getElementById('kiosk-calendar-weekday').textContent = weekdays[today.getDay()];
+        document.getElementById('kiosk-calendar-month').textContent = months[today.getMonth()];
+    })();
+</script>

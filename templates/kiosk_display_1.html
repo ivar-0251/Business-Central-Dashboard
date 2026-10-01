@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Colli kiosk{% endblock %}
+
+{% block webapp %}
+<main class="site-shell kiosk-shell">
+    <header class="site-header kiosk-header">
+        <div>
+            <p class="eyebrow">Verkooporders</p>
+            <h1>Colli</h1>
+        </div>
+        <div class="kiosk-meta">
+            <strong>Vanaf week {{ current_week }}</strong>
+            {% if last_updated %}
+            <span>Bijgewerkt {{ last_updated }}</span>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="kiosk-layout">
+        <div class="kiosk-side kiosk-side-left">
+            {% include "_kiosk_calendar.html" %}
+        </div>
+        <div class="kiosk-main">
+            {% set weeks = data.weekgegevens[:7] %}
+            {% set max_colli = weeks | map(attribute='colli') | max if weeks else 0 %}
+            <div class="kiosk-section-heading">
+                <div>
+                    <p class="eyebrow">Planning</p>
+                    <h2>Komende leverweken</h2>
+                </div>
+                <span>{{ weeks | length }} van de komende weken</span>
+            </div>
+            <section class="kiosk-chart" aria-label="Colli per leverweek">
+                {% for week in weeks %}
+                <div class="kiosk-bar-row{% if loop.first %} kiosk-bar-row-current{% endif %}">
+                    <div class="kiosk-bar-heading">
+                        <strong>Week {{ week.week }}</strong>
+                        {% if loop.first %}<span class="kiosk-current-badge">Huidig</span>{% endif %}
+                        <strong class="kiosk-bar-value">{{ week.colli }} colli</strong>
+                    </div>
+                    <div class="kiosk-bar-track">
+                        <div class="kiosk-bar-fill{% if week.colli > 9000 %} kiosk-bar-fill-warning{% endif %}" style="width: {{ (week.colli / max_colli * 100) if max_colli else 0 }}%"></div>
+                    </div>
+                    <div class="kiosk-bar-details">
+                        <span><strong>{{ week.orders }}</strong> orders</span>
+                        <span><strong>{{ week.gemiddelde }}</strong> colli per order</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="muted">Geen komende leverweken gevonden.</p>
+                {% endfor %}
+            </section>
+        </div>
+        <div class="kiosk-side kiosk-side-right">
+            {% include "_kiosk_weather.html" %}
+        </div>
+    </div>
+</main>
+{% endblock %}

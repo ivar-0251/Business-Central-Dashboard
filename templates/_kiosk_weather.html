@@ -1,0 +1,63 @@
+<aside class="kiosk-weather" aria-label="Actueel weer in Heerhugowaard">
+    <div class="kiosk-weather-heading">
+        <p class="eyebrow">Actueel weer</p>
+        <span class="kiosk-weather-location">Heerhugowaard</span>
+    </div>
+    <div class="kiosk-weather-main">
+        <span class="kiosk-weather-icon" id="kiosk-weather-icon" aria-hidden="true">&#9729;</span>
+        <strong id="kiosk-weather-temperature">--&deg;</strong>
+    </div>
+    <span class="kiosk-weather-description" id="kiosk-weather-description">Weer laden...</span>
+    <span class="kiosk-weather-updated" id="kiosk-weather-updated">Open-Meteo</span>
+</aside>
+
+<script>
+    (() => {
+        const icon = document.getElementById('kiosk-weather-icon');
+        const temperature = document.getElementById('kiosk-weather-temperature');
+        const description = document.getElementById('kiosk-weather-description');
+        const updated = document.getElementById('kiosk-weather-updated');
+        const weatherCodes = {
+            0: ['&#9728;', 'Onbewolkt'],
+            1: ['&#127780;', 'Overwegend helder'],
+            2: ['&#9925;', 'Half bewolkt'],
+            3: ['&#9729;', 'Bewolkt'],
+            45: ['&#127787;', 'Mist'],
+            48: ['&#127787;', 'Rijpende mist'],
+            51: ['&#127782;', 'Lichte motregen'],
+            53: ['&#127782;', 'Motregen'],
+            55: ['&#127782;', 'Dichte motregen'],
+            61: ['&#127783;', 'Lichte regen'],
+            63: ['&#127783;', 'Regen'],
+            65: ['&#127783;', 'Zware regen'],
+            71: ['&#10052;', 'Lichte sneeuw'],
+            73: ['&#10052;', 'Sneeuw'],
+            75: ['&#10052;', 'Zware sneeuw'],
+            80: ['&#127783;', 'Regenbuien'],
+            81: ['&#127783;', 'Regenbuien'],
+            82: ['&#127783;', 'Zware regenbuien'],
+            95: ['&#9889;', 'Onweer'],
+            96: ['&#9889;', 'Onweer met hagel'],
+            99: ['&#9889;', 'Onweer met hagel']
+        };
+
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=52.67&longitude=4.83&current=temperature_2m,weather_code&timezone=Europe%2FAmsterdam')
+            .then(response => {
+                if (!response.ok) throw new Error('Weather request failed');
+                return response.json();
+            })
+            .then(data => {
+                const current = data.current;
+                const weather = weatherCodes[current.weather_code] || ['&#9729;', 'Onbekend weer'];
+                icon.innerHTML = weather[0];
+                temperature.textContent = `${Math.round(current.temperature_2m)}${data.current_units.temperature_2m}`;
+                description.textContent = weather[1];
+                updated.textContent = `Gemeten om ${current.time.slice(11, 16)}`;
+            })
+            .catch(() => {
+                icon.innerHTML = '&#9729;';
+                description.textContent = 'Weer niet beschikbaar';
+                updated.textContent = 'Probeer later opnieuw';
+            });
+    })();
+</script>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Hoofdorders week {{ weeknummer }}{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+    <div>
+        <a class="back-link" href="{{ url_for('week_overview', weeknummer=weeknummer) }}">&larr; Terug naar weekoverzicht</a>
+        <p class="eyebrow">Orderoverzicht</p>
+        <h1>Hoofdorders</h1>
+    </div>
+    <p class="period">Leverweek {{ weeknummer }}<br>{{ ordergroepen | length }} hoofdorders &middot; {{ totaal_meeliftorders }} meeliftorders</p>
+</section>
+
+<section class="panel">
+    <h2>Hoofdorders en meeliftorders</h2>
+    <p class="detail-intro">Per hoofdorder zie je welke meeliftorders aan dezelfde levering zijn gekoppeld. Het ordernummer en de klantnaam staan samen bij elkaar voor snel zoeken en vergelijken.</p>
+    {% if ordergroepen %}
+    <div class="order-details">
+        {% for ordergroep in ordergroepen %}
+        <details class="order-detail">
+            <summary>
+                <div class="order-summary">
+                    <div class="order-summary-main order-cell">
+                        <span class="order-number">{{ ordergroep.nummer }}</span>
+                        <span class="order-name">{{ ordergroep.naam }}</span>
+                    </div>
+                    <div class="order-summary-stats">
+                        <strong>{{ ordergroep.colli | int }} colli</strong>
+                        <span class="order-summary-mlo">{{ ordergroep.meeliftorders | length }} MLO{% if ordergroep.meeliftorders | length != 1 %}'s{% endif %}</span>
+                    </div>
+                </div>
+            </summary>
+            <div class="order-detail-content">
+                <div class="order-detail-heading">
+                    <strong>Meeliftorders</strong>
+                    <span class="muted">{{ ordergroep.meeliftorders | length }} orders</span>
+                </div>
+                {% if ordergroep.meeliftorders %}
+                <div class="order-list">
+                    {% for order in ordergroep.meeliftorders %}
+                    <div class="order-cell">
+                        <span class="order-number">{{ order.nummer }}</span>
+                        <span class="order-name">{{ order.naam }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <span class="muted">Geen meeliftorders</span>
+                {% endif %}
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">Voor deze leverweek zijn geen hoofdorders met meeliftorders gevonden.</div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Orders{% endblock %}
+
+{% block content %}
+    {% set kiosk_weeks = [current_week - 1, current_week, current_week + 1] %}
+    <section class="dashboard-heading">
+        <div>
+            <p class="eyebrow">Verkooporders</p>
+            <h1>Verzendingen</h1>
+        </div>
+        <p class="period">Huidige week: {{ current_week }}</p>
+    </section>
+
+    <div class="kiosk-content">
+        {% for week_number in kiosk_weeks %}
+        {% set week_orders = data.orders | selectattr('Leverweek', 'equalto', week_number) | list %}
+        {% set shipped_orders = week_orders | selectattr('Verzonden', 'equalto', 1) | list %}
+        {% set total_orders = week_orders | length %}
+        {% set shipped_count = shipped_orders | length %}
+        {% set pending_orders = total_orders - shipped_count %}
+        {% set orderpick_count = namespace(value=0) %}
+        {% for order in week_orders %}
+        {% if order['Mag. Verzending bestaat.'] == 1 and order['Verzonden'] != 1 %}
+        {% set orderpick_count.value = orderpick_count.value + 1 %}
+        {% endif %}
+        {% endfor %}
+        {% set shipped_percentage = ((shipped_count / total_orders) * 100) | round(0) | int if total_orders else 0 %}
+        {% set orderpick_percentage = ((orderpick_count.value / pending_orders) * 100) | round(0) | int if pending_orders
+        else 0 %}
+        {% set missing_orderpick_percentage = 100 - orderpick_percentage %}
+        <section
+            class="metric {% if week_number == current_week %}metric-green progress-card-current{% else %}metric-orange{% endif %} progress-card"
+            aria-labelledby="progress-title-{{ week_number }}">
+            <p class="progress-kicker">Week {{ week_number }}</p>
+            <h2 class="progress-title" id="progress-title-{{ week_number }}">Verzonden orders</h2>
+            <div class="progress-ring" role="img"
+                aria-label="{{ shipped_percentage }} procent verzonden, {{ orderpick_percentage }} procent klaar voor orderpick of georderpicked en {{ missing_orderpick_percentage }} procent ontbreekt in week {{ week_number }}">
+                <svg viewBox="0 0 200 200" aria-hidden="true">
+                    <circle class="progress-ring-track progress-ring-track-outer" cx="100" cy="100" r="90"></circle>
+                    <circle class="progress-ring-fill progress-ring-fill-outer" cx="100" cy="100" r="90"
+                        stroke-dashoffset="{{ 565.49 - (565.49 * shipped_percentage / 100) }}"></circle>
+                    <circle class="progress-ring-track progress-ring-track-inner" cx="100" cy="100" r="68"></circle>
+                    <circle class="progress-ring-fill progress-ring-fill-inner" cx="100" cy="100" r="68"
+                        stroke-dasharray="427.26" stroke-dashoffset="{{ 427.26 - (427.26 * orderpick_percentage / 100) }}">
+                    </circle>
+                    {% if pending_orders and orderpick_percentage < 100 %} <circle
+                        class="progress-ring-track progress-ring-track-missing" cx="100" cy="100" r="46">
+                        </circle>
+                        <circle class="progress-ring-fill progress-ring-fill-missing" cx="100" cy="100" r="46"
+                            stroke-dasharray="289.03"
+                            stroke-dashoffset="{{ 289.03 - (289.03 * missing_orderpick_percentage / 100) }}"></circle>
+                    {% endif %}
+                </svg>
+                {% if pending_orders and orderpick_percentage < 100 %} 
+                    <button class="progress-ring-center-button"
+                    type="button" onclick="document.getElementById('orders-not-in-treatment-{{ week_number }}').showModal()"
+                    aria-label="Toon orders die nog niet in behandeling zijn voor week {{ week_number }}"></button>
+                {% endif %}
+            </div>
+            <div class="progress-summary">
+                <div class="progress-result progress-result-shipped">
+                    <strong>{{ shipped_percentage }}%</strong>
+                    <span>Verzonden</span>
+                </div>
+                <div class="progress-result progress-result-orderpick">
+                    <strong>{{ orderpick_percentage }}%</strong>
+                    <span>In behandeling</span>
+                </div>
+                {% if pending_orders and orderpick_percentage < 100 %} 
+                    <div class="progress-result progress-result-missing">
+                        <strong>{{ missing_orderpick_percentage }}%</strong>
+                        <span>Niet in <br>behandeling</span>
+                    </div>
+                {% endif %}
+            </div>
+            {% if pending_orders and orderpick_percentage < 100 %} 
+                <dialog class="order-dialog"
+                id="orders-not-in-treatment-{{ week_number }}">
+                    <div class="order-dialog-header">
+                        <div>
+                            <p class="progress-kicker">Week {{ week_number }}</p>
+                            <h3>Niet in behandeling</h3>
+                        </div>
+                        <button class="order-dialog-close" type="button" onclick="this.closest('dialog').close()"
+                            aria-label="Sluiten">&times;</button>
+                    </div>
+                    <p class="order-dialog-intro">Deze orders zijn nog niet verzonden en hebben geen magazijnverzending.</p>
+                    <div class="order-dialog-list">
+                        {% for order in week_orders %}
+                            {% if order['Verzonden'] != 1 and order['Mag. Verzending bestaat.'] != 1 %}
+                                <div class="order-dialog-item">
+                                    <strong>{{ order['Nr.'] }}</strong>
+                                    <span>{{ order['Naam'] }}</span>
+                                    <small>{{ order['Status'] }}</small>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </dialog>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
