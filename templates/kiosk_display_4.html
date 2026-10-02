@@ -45,7 +45,7 @@
                 </div>
                 <div class="calendar-week-board">
                     {% for event in spanning_events %}
-                    <article class="calendar-event calendar-event-spanning {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}" style="grid-column: {{ event.grid_start }} / {{ event.grid_end }}">
+                    <article class="calendar-event calendar-event-spanning {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}" style="grid-column: {{ event.grid_start }} / {{ event.grid_end }}; grid-row: {{ event.grid_row }}">
                         <div class="calendar-event-time">
                             {% if event.isAllDay %}<strong><span>Hele</span><span>periode</span></strong>{% else %}<strong>{{ event.start.dateTime[11:16] }}</strong>{% endif %}
                         </div>
@@ -56,7 +56,7 @@
                     </article>
                     {% endfor %}
                     {% for day in calendar_days %}
-                    <div class="calendar-day-events{% if day.is_today %} calendar-day-events-today{% endif %}">
+                    <div class="calendar-day-events{% if day.is_today %} calendar-day-events-today{% endif %}" style="grid-row: {{ spanning_events|length + 1 }}">
                         <div class="calendar-events">
                         {% for event in day.events %}
                         <article class="calendar-event {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}">

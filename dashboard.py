@@ -37,6 +37,8 @@ def get_calendar_event_color(event):
 
     if has_word('vrij') or has_word('vakantie'):
         return 'calendar-event-free'
+    if has_word('ziek'):
+        return 'calendar-event-sick'
     if has_word('kantoor') or has_word('kantoordag') or has_word_pair('kantoor', 'dag'):
         return 'calendar-event-office'
     if (has_word('niet') and has_word('werkdag')) or has_word_pair('niet', 'werkdag'):
@@ -58,7 +60,8 @@ def get_calendar_event_sort_key(event):
         'calendar-event-office': 0,
         'calendar-event-home-working': 1,
         'calendar-event-not-working': 2,
-        'calendar-event-other': 3,
+        'calendar-event-sick': 3,
+        'calendar-event-other': 4,
     }
     return (
         color_order[event['color_class']],
@@ -388,6 +391,8 @@ def load_calendar_view_data(week_offset=0, calendar_name='algemeen'):
     for event_date, events in events_by_date.items():
         events_by_date[event_date] = sort_calendar_events(events)
     spanning_events = sort_calendar_events(spanning_events)
+    for row, event in enumerate(spanning_events, start=1):
+        event['grid_row'] = row
 
     calendar_days = [
         {
@@ -404,6 +409,11 @@ def load_calendar_view_data(week_offset=0, calendar_name='algemeen'):
 
 @app.route('/agenda')
 def agenda():
+    return redirect(url_for('agenda_algemeen'))
+
+
+@app.route('/agenda/algemeen')
+def agenda_algemeen():
     week_offset = request.args.get('week_offset', default=0, type=int)
     calendar_name = request.args.get('calendar', default='algemeen')
     if calendar_name not in {'algemeen', 'planning'}:
@@ -412,7 +422,7 @@ def agenda():
     selected_week = date.today() - timedelta(days=date.today().weekday()) + timedelta(weeks=week_offset)
 
     return render_template(
-        'agenda.html',
+        'agenda_algemeen.html',
         calendar_days=calendar_days,
         spanning_events=spanning_events,
         current_week=selected_week.isocalendar().week,

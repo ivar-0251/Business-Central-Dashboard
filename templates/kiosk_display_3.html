@@ -16,6 +16,7 @@
             {% include "_kiosk_calendar.html" %}
         </div>
         <div class="kiosk-main">
+            {% include "_calendar_legend.html" %}
             <section class="calendar-week" aria-label="Werkweekagenda">
                 <div class="calendar-week-head">
                     {% for day in calendar_days %}
@@ -34,7 +35,7 @@
                 </div>
                 <div class="calendar-week-board">
                     {% for event in spanning_events %}
-                    <article class="calendar-event calendar-event-spanning {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}" style="grid-column: {{ event.grid_start }} / {{ event.grid_end }}">
+                    <article class="calendar-event calendar-event-spanning {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}" style="grid-column: {{ event.grid_start }} / {{ event.grid_end }}; grid-row: {{ event.grid_row }}">
                         <div class="calendar-event-time">
                             {% if event.isAllDay %}
                             <strong><span>Hele</span><span>periode</span></strong>
@@ -51,7 +52,7 @@
                     </article>
                     {% endfor %}
                     {% for day in calendar_days %}
-                    <div class="calendar-day-events">
+                    <div class="calendar-day-events" style="grid-row: {{ spanning_events|length + 1 }}">
                         <div class="calendar-events">
                         {% for event in day.events %}
                         <article class="calendar-event {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}">
