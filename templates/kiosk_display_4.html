@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Planning{% endblock %}
+
+{% block webapp %}
+<main class="site-shell kiosk-shell kiosk-display-4">
+    <header class="site-header kiosk-header">
+        <div>
+            <p class="eyebrow">Verver Export / Operatie</p>
+            <h1>Planning</h1>
+        </div>
+        <div class="planning-header-meta">
+            <p class="eyebrow">Weekoverzicht</p>
+            <strong>Week {{ current_week }}</strong>
+        </div>
+    </header>
+
+    <div class="kiosk-layout kiosk-workweek-layout">
+        <div class="kiosk-side kiosk-side-left">
+            {% include "_kiosk_calendar.html" %}
+        </div>
+        <div class="kiosk-main">
+            <section class="calendar-week" aria-label="Planning per werkdag">
+                <div class="planning-board-heading">
+                    <div>
+                        <p class="eyebrow">Weekplanning</p>
+                        <h2>Bezetting per werkdag</h2>
+                    </div>
+                    <span class="planning-board-note">Vandaag gemarkeerd</span>
+                </div>
+                <div class="calendar-week-head">
+                    {% for day in calendar_days %}
+                    <div class="calendar-day{% if day.is_today %} calendar-day-today{% endif %}">
+                        <h2>{{ day.label }} <span>{{ day.events|length }}</span></h2>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="calendar-weather-week" aria-label="Weersverwachting per werkdag">
+                    {% for day in calendar_days %}
+                    <div class="calendar-weather-day" data-weather-date="{{ day.date.isoformat() }}">
+                        <span class="calendar-weather-icon" aria-hidden="true">&#9729;</span>
+                        <span class="calendar-weather-temperatures">--&deg; / --&deg;</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="calendar-week-board">
+                    {% for event in spanning_events %}
+                    <article class="calendar-event calendar-event-spanning {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}" style="grid-column: {{ event.grid_start }} / {{ event.grid_end }}">
+                        <div class="calendar-event-time">
+                            {% if event.isAllDay %}<strong><span>Hele</span><span>periode</span></strong>{% else %}<strong>{{ event.start.dateTime[11:16] }}</strong>{% endif %}
+                        </div>
+                        <div class="calendar-event-details">
+                            <h3>{{ event.subject or 'Zonder titel' }}</h3>
+                            {% if event.location and event.location.displayName %}<span>{{ event.location.displayName }}</span>{% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                    {% for day in calendar_days %}
+                    <div class="calendar-day-events{% if day.is_today %} calendar-day-events-today{% endif %}">
+                        <div class="calendar-events">
+                        {% for event in day.events %}
+                        <article class="calendar-event {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}">
+                            <div class="calendar-event-time">
+                                {% if event.isAllDay %}<strong><span>Hele</span><span>dag</span></strong>{% else %}<strong>{{ event.start.dateTime[11:16] }}</strong><span>{{ event.end.dateTime[11:16] }}</span>{% endif %}
+                            </div>
+                            <div class="calendar-event-details">
+                                <h3>{{ event.subject or 'Zonder titel' }}</h3>
+                                {% if event.location and event.location.displayName %}<span>{{ event.location.displayName }}</span>{% endif %}
+                            </div>
+                        </article>
+                        {% else %}<p class="muted">Geen afspraken</p>{% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+        <div class="kiosk-side kiosk-side-right">
+            {% include "_kiosk_weather.html" %}
+        </div>
+    </div>
+</main>
+<script>
+    (() => {
+        const weatherCodes = {0: '&#9728;', 1: '&#127780;', 2: '&#9925;', 3: '&#9729;', 45: '&#127787;', 48: '&#127787;', 51: '&#127782;', 53: '&#127782;', 55: '&#127782;', 61: '&#127783;', 63: '&#127783;', 65: '&#127783;', 71: '&#10052;', 73: '&#10052;', 75: '&#10052;', 80: '&#127783;', 81: '&#127783;', 82: '&#127783;', 95: '&#9889;', 96: '&#9889;', 99: '&#9889;'};
+        const days = [...document.querySelectorAll('.calendar-weather-day')];
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=52.67&longitude=4.83&daily=weather_code,temperature_2m_min,temperature_2m_max&forecast_days=7&timezone=Europe%2FAmsterdam')
+            .then(response => { if (!response.ok) throw new Error('Weather request failed'); return response.json(); })
+            .then(data => days.forEach(day => { const index = data.daily.time.indexOf(day.dataset.weatherDate); if (index === -1) return; day.querySelector('.calendar-weather-icon').innerHTML = weatherCodes[data.daily.weather_code[index]] || '&#9729;'; day.querySelector('.calendar-weather-temperatures').textContent = `${Math.round(data.daily.temperature_2m_min[index])}\u00b0 / ${Math.round(data.daily.temperature_2m_max[index])}\u00b0`; }))
+            .catch(() => days.forEach(day => { day.querySelector('.calendar-weather-temperatures').textContent = 'Geen verwachting'; }));
+    })();
+</script>
+{% endblock %}

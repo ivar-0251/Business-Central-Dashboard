@@ -41,7 +41,7 @@ def get_calendar_event_color(event):
         return 'calendar-event-office'
     if (has_word('niet') and has_word('werkdag')) or has_word_pair('niet', 'werkdag'):
         return 'calendar-event-not-working'
-    if (has_word('thuis') and has_word('werkdag')) or has_word_pair('thuis', 'werkdag'):
+    if (has_word('thuis') and has_word('werkdag')) or has_word_pair('thuis', 'werkdag') or (has_word('thuis') and has_word('werken')) or has_word_pair('thuis', 'werken'):
         return 'calendar-event-home-working'
     return 'calendar-event-other'
 
@@ -343,7 +343,7 @@ def kiosk_display_2():
         last_updated=last_updated,
     )
 
-def load_calendar_view_data(week_offset=0):
+def load_calendar_view_data(week_offset=0, calendar_name='algemeen'):
     """Load and group calendar events for a selected work week.
 
     **Parameters:**
@@ -361,7 +361,7 @@ def load_calendar_view_data(week_offset=0):
     events_by_date = {week_start + timedelta(days=offset): [] for offset in range(5)}
     spanning_events = []
 
-    for event in get_calendar_events(week_start):
+    for event in get_calendar_events(week_start, calendar_name):
         event['color_class'] = get_calendar_event_color(event)
         start_text = event.get('start', {}).get('dateTime', '')
         end_text = event.get('end', {}).get('dateTime', '')
@@ -405,7 +405,10 @@ def load_calendar_view_data(week_offset=0):
 @app.route('/agenda')
 def agenda():
     week_offset = request.args.get('week_offset', default=0, type=int)
-    calendar_days, spanning_events = load_calendar_view_data(week_offset)
+    calendar_name = request.args.get('calendar', default='algemeen')
+    if calendar_name not in {'algemeen', 'planning'}:
+        abort(404)
+    calendar_days, spanning_events = load_calendar_view_data(week_offset, calendar_name)
     selected_week = date.today() - timedelta(days=date.today().weekday()) + timedelta(weeks=week_offset)
 
     return render_template(
@@ -414,18 +417,33 @@ def agenda():
         spanning_events=spanning_events,
         current_week=selected_week.isocalendar().week,
         week_offset=week_offset,
+        calendar_name=calendar_name,
     )
 
 
 @app.route('/kiosk/display-3')
 def kiosk_display_3():
-    calendar_days, spanning_events = load_calendar_view_data()
+    calendar_days, spanning_events = load_calendar_view_data(calendar_name='algemeen')
 
     return render_template(
         'kiosk_display_3.html',
         calendar_days=calendar_days,
         spanning_events=spanning_events,
         current_week=date.today().isocalendar().week,
+        calendar_name='algemeen',
+    )
+
+
+@app.route('/kiosk/display-4')
+def kiosk_display_4():
+    calendar_days, spanning_events = load_calendar_view_data(calendar_name='planning')
+
+    return render_template(
+        'kiosk_display_4.html',
+        calendar_days=calendar_days,
+        spanning_events=spanning_events,
+        current_week=date.today().isocalendar().week,
+        calendar_name='planning',
     )
 
 if __name__ == '__main__':

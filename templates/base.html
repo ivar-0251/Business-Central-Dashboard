@@ -8,7 +8,7 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='verver.png') }}">
     <style>
         body {
-            background-image: url("{{ url_for('static', filename='grass_background.png') }}");
+            background-image: url("{{ url_for('static', filename='tulip_background.png') }}");
             background-position: center;
             background-attachment: fixed;
             background-size: cover;
@@ -16,6 +16,7 @@
     </style>
 </head>
 <body>
+    <img class="site-logo" src="{{ url_for('static', filename='verver.png') }}" alt="Verver Export">
     {% block webapp %}
     <main class="site-shell">
         <header class="site-header">

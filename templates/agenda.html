@@ -5,8 +5,8 @@
 {% block content %}
 <section class="dashboard-heading">
     <div>
-        <p class="eyebrow">Planning</p>
-        <h1>Agenda</h1>
+        <p class="eyebrow">{{ 'Planning' if calendar_name == 'planning' else 'Algemeen' }}</p>
+        <h1>{{ 'Planning' if calendar_name == 'planning' else 'Agenda' }}</h1>
     </div>
     <div class="agenda-navigation">
         <p class="period" data-week-offset="{{ week_offset }}">Werkweek {{ current_week }}</p>
@@ -120,7 +120,7 @@
         const nextWeekButton = document.getElementById('agenda-next-week');
         let weekOffset = Number(document.querySelector('.period').dataset.weekOffset);
 
-        const fetchWeek = offset => fetch(`{{ url_for('agenda') }}?week_offset=${offset}`)
+        const fetchWeek = offset => fetch(`{{ url_for('agenda') }}?week_offset=${offset}&calendar={{ calendar_name }}`)
             .then(response => {
                 if (!response.ok) throw new Error('Agenda request failed');
                 return response.text();

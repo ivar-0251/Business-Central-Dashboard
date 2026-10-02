@@ -14,6 +14,7 @@ load_dotenv()
 # local import
 
 from accesstoken import get_access_token
+from get_calendar import fetch_and_save_calendars
 
 # external imports
 
@@ -86,15 +87,29 @@ def fetch_and_save_sales_headers(week_filter=None):
 	print(f"Sales headers opgeslagen om {output['timestamp']}")
 
 
-def seconds_until_next_five_minute_mark():
+def seconds_until_next_minute_mark(interval):
 	now = time.time()
-	return 300 - (now % 300)
+	return interval * 60 - (now % (interval * 60))
 
 
 if __name__ == "__main__":
-	while True:
-		time.sleep(seconds_until_next_five_minute_mark())
-		try:
-			fetch_and_save_sales_headers()
-		except Exception as error:
-			print(f"Ophalen van sales headers mislukt: {error}")
+	import threading
+
+	def update_sales_headers():
+		while True:
+			time.sleep(seconds_until_next_minute_mark(5))
+			try:
+				fetch_and_save_sales_headers()
+			except Exception as error:
+				print(f"Ophalen van sales headers mislukt: {error}")
+
+	def update_calendars():
+		while True:
+			time.sleep(seconds_until_next_minute_mark(5))
+			try:
+				fetch_and_save_calendars()
+			except Exception as error:
+				print(f"Ophalen van agenda's mislukt: {error}")
+
+	threading.Thread(target=update_sales_headers, daemon=True).start()
+	update_calendars()
