@@ -25,10 +25,13 @@
         {% set orderpick_count.value = orderpick_count.value + 1 %}
         {% endif %}
         {% endfor %}
+        {% set missing_orderpick_count = pending_orders - shipped_count - orderpick_count.value %}
         {% set shipped_percentage = ((shipped_count / total_orders) * 100) | round(0) | int if total_orders else 0 %}
         {% set orderpick_percentage = ((orderpick_count.value / pending_orders) * 100) | round(1) if pending_orders
         else 0.0 %}
-        {% set missing_orderpick_percentage = (100 - shipped_percentage - orderpick_percentage) | round(1) %}
+        {% set missing_orderpick_percentage = ((100 - shipped_percentage - orderpick_percentage) | round(1)) if missing_orderpick_count > 0 and (100 - shipped_percentage - orderpick_percentage) > 0 else 0.0 %}
+        {% set orderpick_percentage_display = orderpick_percentage | int if orderpick_percentage == (orderpick_percentage | int) else orderpick_percentage %}
+        {% set missing_orderpick_percentage_display = missing_orderpick_percentage | int if missing_orderpick_percentage == (missing_orderpick_percentage | int) else missing_orderpick_percentage %}
         <section class="progress-week" aria-labelledby="progress-title-{{ week_number }}">
             <div
                 class="metric {% if week_number == current_week %}metric-green progress-card-current{% else %}metric-orange{% endif %} progress-card"
@@ -36,7 +39,7 @@
             <p class="progress-kicker">Week {{ week_number }}</p>
             <h2 class="progress-title" id="progress-title-{{ week_number }}">Verzonden orders</h2>
             <div class="progress-ring" role="img"
-                aria-label="{{ shipped_percentage }} procent verzonden, {{ orderpick_percentage }} procent klaar voor orderpick of georderpicked en {{ missing_orderpick_percentage }} procent ontbreekt in week {{ week_number }}">
+                aria-label="{{ shipped_percentage }} procent verzonden, {{ orderpick_percentage_display }} procent klaar voor orderpick of georderpicked en {{ missing_orderpick_percentage_display }} procent ontbreekt in week {{ week_number }}">
                 <svg viewBox="0 0 200 200" aria-hidden="true">
                     <circle class="progress-ring-track progress-ring-track-outer ring-clickable" cx="100" cy="100" r="90"
                         onclick="document.getElementById('orders-shipped-{{ week_number }}').showModal()"></circle>
@@ -66,12 +69,12 @@
                     <span>Verzonden</span>
                 </div>
                 <div class="progress-result progress-result-orderpick">
-                    <strong>{{ orderpick_percentage }}%</strong>
+                    <strong>{{ orderpick_percentage_display }}%</strong>
                     <span>In behandeling</span>
                 </div>
                 {% if pending_orders and orderpick_percentage < 100 %} 
                     <div class="progress-result progress-result-missing">
-                        <strong>{{ missing_orderpick_percentage }}%</strong>
+                        <strong>{{ missing_orderpick_percentage_display }}%</strong>
                         <span>Niet in <br>behandeling</span>
                     </div>
                 {% endif %}
