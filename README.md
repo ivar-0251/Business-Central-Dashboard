@@ -99,6 +99,8 @@ Open daarna:
 | Kiosk 1 | `http://127.0.0.1:5000/kiosk/display-1` |
 | Kiosk 2 | `http://127.0.0.1:5000/kiosk/display-2` |
 | Kiosk 3: agenda | `http://127.0.0.1:5000/kiosk/display-3` |
+| Kiosk 3.1: agenda volgende week | `http://127.0.0.1:5000/kiosk/display-3.1` |
+| Kiosk 4.1: planning volgende week | `http://127.0.0.1:5000/kiosk/display-4.1` |
 
 De root-URL `/` verwijst automatisch door naar `/dashboard`.
 

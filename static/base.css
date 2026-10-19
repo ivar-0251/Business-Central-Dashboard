@@ -357,6 +357,10 @@ h3 {
     margin: 0;
 }
 
+.agenda-day-navigation {
+    display: none;
+}
+
 .agenda-stage {
     display: flex;
     align-items: center;
@@ -1632,6 +1636,115 @@ th:last-child {
     .period {
         margin-top: 18px;
         text-align: left;
+    }
+    .agenda-day-navigation {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 14px;
+        padding: 8px 0;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+    }
+    .agenda-day-navigation button {
+        width: 36px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        color: var(--white);
+        background: var(--accent);
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+    }
+    .agenda-day-navigation button:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
+    .agenda-day-navigation span {
+        flex: 1;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 700;
+        text-align: center;
+    }
+    .agenda-stage {
+        align-items: stretch;
+        gap: 8px;
+    }
+    .agenda-stage > .panel {
+        width: auto;
+    }
+    .agenda-arrow {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        align-self: center;
+        font-size: 22px;
+    }
+    .calendar-week-head,
+    .calendar-weather-week {
+        display: block;
+    }
+    .calendar-day,
+    .calendar-weather-day,
+    .calendar-day-events {
+        display: none;
+    }
+    .calendar-day.mobile-selected-day,
+    .calendar-weather-day.mobile-selected-day,
+    .calendar-day-events.mobile-selected-day {
+        display: block;
+    }
+    .calendar-week-board {
+        display: block;
+        margin-top: 12px;
+    }
+    .calendar-event-spanning {
+        display: grid;
+        margin-bottom: 9px;
+    }
+    .calendar-day > h2 {
+        margin-bottom: 8px;
+        font-size: 20px;
+    }
+    .calendar-weather-day {
+        padding: 2px 8px 6px;
+    }
+    .calendar-event {
+        grid-template-columns: 58px minmax(0, 1fr);
+        gap: 6px;
+    }
+    .calendar-event-details h3 {
+        font-size: 14px;
+    }
+    .calendar-legend {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 10px;
+        min-width: 0;
+        margin: 0 0 16px;
+        padding: 10px 12px;
+        border-left-width: 3px;
+        box-shadow: none;
+        font-size: 10px;
+    }
+    .calendar-legend-title {
+        grid-column: 1 / -1;
+    }
+    .calendar-legend-item {
+        min-width: 0;
+        gap: 5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .calendar-legend-swatch {
+        flex: 0 0 22px;
+        width: 22px;
+        height: 11px;
     }
     .upload-page {
         grid-template-columns: 1fr;

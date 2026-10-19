@@ -12,6 +12,7 @@ import json
 import re
 from urllib.parse import quote
 from get_calendar import get_calendar_events
+from authenticator import login_required
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -121,6 +122,12 @@ def bereken_ordertypes(week_orders):
 from flask import Flask, abort, render_template, redirect, request, url_for
 
 app = Flask(__name__)
+
+app.config["SECRET_KEY"] = env["SECRET_KEY"]
+
+from auth import bp as auth_bp
+app.register_blueprint(auth_bp, url_prefix='/auth')
+
 API_DATA_FILE = Path(__file__).with_name('salesHeaders.json')
 
 
@@ -222,10 +229,12 @@ def load_dashboard_data():
     return {'weekgegevens': weekgegevens, 'orders': orders}, last_updated
 
 @app.route('/')
+@login_required
 def index():
     return redirect(url_for('dashboard'))
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
     data, last_updated = load_dashboard_data()
 
@@ -238,6 +247,7 @@ def dashboard():
 
 
 @app.route('/dashboard/week-<int:weeknummer>')
+@login_required
 def week_overview(weeknummer):
     data, last_updated = load_dashboard_data()
 
@@ -266,6 +276,7 @@ def week_overview(weeknummer):
 
 
 @app.route('/dashboard/hoofdorders/<int:weeknummer>')
+@login_required
 def hoofdorders(weeknummer):
     data, last_updated = load_dashboard_data()
 
@@ -314,6 +325,7 @@ def hoofdorders(weeknummer):
     )
 
 @app.route('/verzendingen')
+@login_required
 def verzendingen():
     data, last_updated = load_dashboard_data()
 
@@ -325,6 +337,7 @@ def verzendingen():
     )
 
 @app.route('/kiosk/display-1')
+@login_required
 def kiosk_display_1():
     data, last_updated = load_dashboard_data()
 
@@ -336,6 +349,7 @@ def kiosk_display_1():
     )
 
 @app.route('/kiosk/display-2')
+@login_required
 def kiosk_display_2():
     data, last_updated = load_dashboard_data()
 
@@ -408,11 +422,13 @@ def load_calendar_view_data(week_offset=0, calendar_name='algemeen'):
 
 
 @app.route('/agenda')
+@login_required
 def agenda():
     return redirect(url_for('agenda_algemeen'))
 
 
 @app.route('/agenda/algemeen')
+@login_required
 def agenda_algemeen():
     week_offset = request.args.get('week_offset', default=0, type=int)
     calendar_name = request.args.get('calendar', default='algemeen')
@@ -432,6 +448,7 @@ def agenda_algemeen():
 
 
 @app.route('/kiosk/display-3')
+@login_required
 def kiosk_display_3():
     calendar_days, spanning_events = load_calendar_view_data(calendar_name='algemeen')
 
@@ -444,7 +461,26 @@ def kiosk_display_3():
     )
 
 
+@app.route('/kiosk/display-3.1')
+@login_required
+def kiosk_display_3_1():
+    calendar_days, spanning_events = load_calendar_view_data(
+        week_offset=1,
+        calendar_name='algemeen',
+    )
+    next_week = date.today() + timedelta(weeks=1)
+
+    return render_template(
+        'kiosk_display_3.html',
+        calendar_days=calendar_days,
+        spanning_events=spanning_events,
+        current_week=next_week.isocalendar().week,
+        calendar_name='algemeen',
+    )
+
+
 @app.route('/kiosk/display-4')
+@login_required
 def kiosk_display_4():
     calendar_days, spanning_events = load_calendar_view_data(calendar_name='planning')
 
@@ -455,6 +491,25 @@ def kiosk_display_4():
         current_week=date.today().isocalendar().week,
         calendar_name='planning',
     )
+
+
+@app.route('/kiosk/display-4.1')
+@login_required
+def kiosk_display_4_1():
+    calendar_days, spanning_events = load_calendar_view_data(
+        week_offset=1,
+        calendar_name='planning',
+    )
+    next_week = date.today() + timedelta(weeks=1)
+
+    return render_template(
+        'kiosk_display_4.html',
+        calendar_days=calendar_days,
+        spanning_events=spanning_events,
+        current_week=next_week.isocalendar().week,
+        calendar_name='planning',
+    )
+
 
 if __name__ == '__main__':
     app.run(debug=True, host=env['host'], port=env['port'])

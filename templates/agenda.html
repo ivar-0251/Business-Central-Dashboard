@@ -10,6 +10,11 @@
     </div>
     <div class="agenda-navigation">
         <p class="period" data-week-offset="{{ week_offset }}">Werkweek {{ current_week }}</p>
+        <div class="agenda-day-navigation" aria-label="Dag kiezen">
+            <button type="button" id="agenda-previous-day" aria-label="Vorige werkdag">&#8592;</button>
+            <span id="agenda-selected-day" aria-live="polite"></span>
+            <button type="button" id="agenda-next-day" aria-label="Volgende werkdag">&#8594;</button>
+        </div>
     </div>
 </section>
 
@@ -21,14 +26,14 @@
     <div class="calendar-week">
         <div class="calendar-week-head">
             {% for day in calendar_days %}
-            <div class="calendar-day{% if day.is_today %} calendar-day-today{% endif %}">
+            <div class="calendar-day{% if day.is_today %} calendar-day-today{% endif %}" data-day-index="{{ loop.index0 }}">
                 <h2>{{ day.label }}</h2>
             </div>
             {% endfor %}
         </div>
         <div class="calendar-weather-week" aria-label="Weersverwachting per werkdag">
             {% for day in calendar_days %}
-            <div class="calendar-weather-day" data-weather-date="{{ day.date.isoformat() }}">
+            <div class="calendar-weather-day" data-day-index="{{ loop.index0 }}" data-weather-date="{{ day.date.isoformat() }}">
                 <span class="calendar-weather-icon" aria-hidden="true">&#9729;</span>
                 <span class="calendar-weather-temperatures">--&deg; / --&deg;</span>
             </div>
@@ -53,7 +58,7 @@
             </article>
             {% endfor %}
             {% for day in calendar_days %}
-            <div class="calendar-day-events" style="grid-row: {{ spanning_events|length + 1 }}">
+            <div class="calendar-day-events" data-day-index="{{ loop.index0 }}" style="grid-row: {{ spanning_events|length + 1 }}">
                 <div class="calendar-events">
                 {% for event in day.events %}
                 <article class="calendar-event {{ event.color_class }}{% if event.isAllDay %} calendar-event-all-day{% endif %}">
@@ -119,7 +124,23 @@
 
         const previousWeekButton = document.getElementById('agenda-previous-week');
         const nextWeekButton = document.getElementById('agenda-next-week');
+        const previousDayButton = document.getElementById('agenda-previous-day');
+        const nextDayButton = document.getElementById('agenda-next-day');
+        const selectedDayLabel = document.getElementById('agenda-selected-day');
         let weekOffset = Number(document.querySelector('.period').dataset.weekOffset);
+        let selectedDay = 0;
+
+        const setSelectedDay = dayIndex => {
+            const dayCount = document.querySelectorAll('.calendar-day').length;
+            selectedDay = Math.max(0, Math.min(dayIndex, dayCount - 1));
+            document.querySelectorAll('[data-day-index]').forEach(day => {
+                day.classList.toggle('mobile-selected-day', Number(day.dataset.dayIndex) === selectedDay);
+            });
+            const selectedHeader = document.querySelector(`.calendar-day[data-day-index="${selectedDay}"] h2`);
+            selectedDayLabel.textContent = selectedHeader ? selectedHeader.textContent : '';
+            previousDayButton.disabled = selectedDay === 0;
+            nextDayButton.disabled = selectedDay === dayCount - 1;
+        };
 
         const fetchWeek = offset => fetch(`{{ url_for('agenda_algemeen') }}?week_offset=${offset}&calendar={{ calendar_name }}`)
             .then(response => {
@@ -148,12 +169,17 @@
                 period.dataset.weekOffset = offset;
                 weekOffset = offset;
                 loadWeather();
+                setSelectedDay(0);
             }).catch(() => {}).finally(() => setNavigationBusy(false));
         };
 
         previousWeekButton.addEventListener('click', () => showWeek(weekOffset - 1));
         nextWeekButton.addEventListener('click', () => showWeek(weekOffset + 1));
+        previousDayButton.addEventListener('click', () => setSelectedDay(selectedDay - 1));
+        nextDayButton.addEventListener('click', () => setSelectedDay(selectedDay + 1));
 
+        const todayIndex = [...document.querySelectorAll('.calendar-day')].findIndex(day => day.classList.contains('calendar-day-today'));
+        setSelectedDay(todayIndex >= 0 ? todayIndex : 0);
         loadWeather();
     })();
 </script>
