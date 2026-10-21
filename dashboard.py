@@ -148,6 +148,89 @@ def business_central_order_url(order_number):
     return f"{base_url}?company={company}&page=42&filter={order_filter}"
 
 
+def business_central_order_group_url(order_number):
+    """Build a link to a main order and its linked accompanying orders."""
+    base_url = (
+        f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
+        f"/{env['api_environment']}"
+    )
+    company = quote(env.get('api_company_name', 'Verver Export B.V.'), safe='')
+    order_filter = quote(f"'Main Order No.' IS '{order_number}'", safe='')
+    return f"{base_url}?company={company}&page=9305&filter={order_filter}"
+
+
+def business_central_zero_colli_url():
+    """Build a link to the sales order LIST page filtered from the current week.
+
+    Filters are limited to orders without crate quantities (0) and with a delivery week
+    matching the current week.
+    """
+    base_url = (
+        f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
+        f"/{env['api_environment']}"
+    )
+    company = quote(env.get('api_company_name', 'Verver Export B.V.'), safe='')
+    
+    # Huidige week opvragen
+    current_week = date.today().isocalendar().week
+    
+    # OPLOSSING: 
+    # De filters blijven identiek, maar we sturen de gebruiker naar de lijst-pagina (9305) in plaats van de kaart (42).
+    filter_expression = (
+        f"'Crate Quantity' IS '0' AND 'Delivery Week No.' IS '{current_week}..'"
+    )
+    
+    filter_value = quote(filter_expression, safe='')
+    
+    # Verander page=42 naar page=9305
+    return f"{base_url}?company={company}&page=9305&filter={filter_value}"
+
+
+def business_central_current_week_orders_url():
+    """Build a link to the sales order list filtered to the current delivery week."""
+    base_url = (
+        f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
+        f"/{env['api_environment']}"
+    )
+    company = quote(env.get('api_company_name', 'Verver Export B.V.'), safe='')
+    current_week = date.today().isocalendar().week
+    filter_expression = f"'Delivery Week No.' IS '{current_week}..'"
+    filter_value = quote(filter_expression, safe='')
+    return f"{base_url}?company={company}&page=9305&filter={filter_value}"
+
+def business_central_current_week_primary_orders_url(primary_order_numbers):
+    """Build a link filtered to the current delivery weeks and exact primary orders."""
+    base_url = (
+            f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
+            f"/{env['api_environment']}"
+        )
+    company = quote(env.get('api_company_name', 'Verver Export B.V.'), safe='')
+    current_week = date.today().isocalendar().week
+    order_numbers = '|'.join(str(number) for number in primary_order_numbers)
+    filter_expression = (
+        f"'Delivery Week No.' IS '{current_week}..' "
+        f"AND 'No.' IS '{order_numbers}'"
+    )
+    filter_value = quote(filter_expression, safe='')
+    return f"{base_url}?company={company}&page=9305&filter={filter_value}"
+
+
+def business_central_week_orders_url(order_numbers, weeknummer):
+    """Build a link to exact orders in a specific delivery week."""
+    base_url = (
+        f"https://businesscentral.dynamics.com/{env['api_tenant_id']}"
+        f"/{env['api_environment']}"
+    )
+    company = quote(env.get('api_company_name', 'Verver Export B.V.'), safe='')
+    numbers = '|'.join(str(number) for number in order_numbers)
+    filter_expression = (
+        f"'Delivery Week No.' IS '{weeknummer}' "
+        f"AND 'No.' IS '{numbers}'"
+    )
+    filter_value = quote(filter_expression, safe='')
+    return f"{base_url}?company={company}&page=9305&filter={filter_value}"
+
+
 @app.context_processor
 def inject_business_central_helpers():
     """Expose Business Central URL helpers to all Jinja templates.
@@ -156,7 +239,14 @@ def inject_business_central_helpers():
 
     **Returns:** A template context dictionary containing the order URL helper.
     """
-    return {'business_central_order_url': business_central_order_url}
+    return {
+        'business_central_order_url': business_central_order_url,
+        'business_central_order_group_url': business_central_order_group_url,
+        'business_central_zero_colli_url': business_central_zero_colli_url,
+        'business_central_current_week_orders_url': business_central_current_week_orders_url,
+        'business_central_current_week_primary_orders_url': business_central_current_week_primary_orders_url,
+        'business_central_week_orders_url': business_central_week_orders_url,
+    }
 
 
 def load_dashboard_data():
@@ -224,9 +314,24 @@ def load_dashboard_data():
             'orderkolommen': ['Aantal kratten'],
         })
 
+    leverweek_set = set(komende_weken)
+    zero_colli_order_rows = [
+        order
+        for order in orders
+        if order.get('Leverweek') is not None
+        and int(float(str(order.get('Leverweek', '')).strip() or 0)) in leverweek_set
+        and (order.get('Aantal kratten') or 0) == 0
+    ]
+    zero_colli_orders = len(zero_colli_order_rows)
+
     timestamp = datetime.fromisoformat(payload['timestamp'])
     last_updated = timestamp.strftime('%d-%m-%Y %H:%M')
-    return {'weekgegevens': weekgegevens, 'orders': orders}, last_updated
+    return {
+        'weekgegevens': weekgegevens,
+        'orders': orders,
+        'zero_colli_orders': zero_colli_orders,
+        'zero_colli_order_details': zero_colli_order_rows,
+    }, last_updated
 
 @app.route('/')
 @login_required
@@ -265,12 +370,22 @@ def week_overview(weeknummer):
     order_columns = list(dict.fromkeys(
         column for order in week_orders for column in order.keys()
     ))
+    meelift_order_numbers = [
+        order['Nr.'] for order in week_orders
+        if order.get('Hoofdorder') and str(order['Nr.']) != str(order['Hoofdorder'])
+    ]
+    losstaande_order_numbers = [
+        order['Nr.'] for order in week_orders
+        if not order.get('Hoofdorder')
+    ]
 
     return render_template(
         'week_overview.html',
         week=weekgegevens,
         orders=week_orders,
         order_columns=order_columns,
+        meelift_order_numbers=meelift_order_numbers,
+        losstaande_order_numbers=losstaande_order_numbers,
         last_updated=last_updated,
     )
 

@@ -18,9 +18,17 @@
 </section>
 
 <section class="metrics" aria-label="Samenvatting week {{ week.week }}">
-    <a class="metric metric-link" href="{{ url_for('hoofdorders', weeknummer=week.week) }}"><span class="metric-label">Hoofd orders</span><strong class="metric-value">{{ week.hoofdorders }}</strong><span class="metric-action">Bekijk overzicht</span></a>
+    <a class="metric metric-link" href="{{ url_for('hoofdorders', weeknummer=week.week) }}"><span class="metric-label">Hoofd orders</span><strong class="metric-value">{{ week.hoofdorders }}</strong></a>
+    {% if meelift_order_numbers %}
+    <a class="metric metric-green metric-link" href="{{ business_central_week_orders_url(meelift_order_numbers, week.week) }}" target="_blank" rel="noopener noreferrer"><span class="metric-label">Meelift orders</span><strong class="metric-value">{{ week.meeliftorders }}</strong></a>
+    {% else %}
     <article class="metric metric-green"><span class="metric-label">Meelift orders</span><strong class="metric-value">{{ week.meeliftorders }}</strong></article>
+    {% endif %}
+    {% if losstaande_order_numbers %}
+    <a class="metric metric-link" href="{{ business_central_week_orders_url(losstaande_order_numbers, week.week) }}" target="_blank" rel="noopener noreferrer"><span class="metric-label">Losstaande orders</span><strong class="metric-value">{{ week.losstaande_orders }}</strong></a>
+    {% else %}
     <article class="metric"><span class="metric-label">Losstaande orders</span><strong class="metric-value">{{ week.losstaande_orders }}</strong></article>
+    {% endif %}
     <article class="metric metric-green"><span class="metric-label">Gemiddeld per order</span><strong class="metric-value">{{ week.gemiddelde }}</strong></article>
 </section>
 

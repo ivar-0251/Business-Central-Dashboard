@@ -1528,6 +1528,55 @@ th:last-child {
     color: var(--warning-red);
 }
 
+.order-dialog-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 18px 0 14px;
+}
+
+.order-dialog-actions .order-dialog-intro {
+    margin: 0;
+}
+
+.order-dialog-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 11px 16px;
+    border: 0;
+    border-radius: 5px;
+    color: var(--white);
+    background: var(--accent-green);
+    box-shadow: 0 4px 10px #458e3230;
+    font: 700 12px Arial, sans-serif;
+    letter-spacing: 0.8px;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.order-dialog-link::after {
+    content: "\2197";
+    font-size: 16px;
+    line-height: 0.75;
+}
+
+.order-dialog-link:hover,
+.order-dialog-link:focus-visible {
+    background: #36752a;
+    box-shadow: 0 6px 14px #458e3245;
+    outline: 2px solid var(--accent-green);
+    outline-offset: 2px;
+    transform: translateY(-1px);
+}
+
+.order-dialog-link:focus-visible {
+    outline-offset: 4px;
+}
+
 .order-dialog-intro {
     margin: 18px 0;
     color: var(--muted);

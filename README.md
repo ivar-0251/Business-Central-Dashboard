@@ -22,7 +22,7 @@ Installeer de Python-pakketten in een virtuele omgeving:
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install Flask pandas python-dotenv msal requests
+python -m pip install -r requirements.txt
 ```
 
 Op Windows kan het activeren van een virtuele omgeving door PowerShell-beleid worden geblokkeerd. Voer in dat geval de commando's uit via een terminal waarin de omgeving al is geactiveerd, of gebruik rechtstreeks `.venv\Scripts\python.exe`.

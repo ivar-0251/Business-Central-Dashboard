@@ -7,6 +7,8 @@
 {% set total_orders = weeks | sum(attribute='orders') %}
 {% set total_colli = weeks | sum(attribute='colli') %}
 {% set max_colli = weeks | map(attribute='colli') | max if weeks else 0 %}
+{% set zero_colli_orders = data.zero_colli_orders if data.zero_colli_orders is defined else 0 %}
+{% set zero_colli_order_details = data.zero_colli_order_details if data.zero_colli_order_details is defined else [] %}
 
 <section class="dashboard-heading">
     <div>
@@ -17,11 +19,46 @@
 </section>
 
 <section class="metrics" aria-label="Samenvatting">
-    <article class="metric"><span class="metric-label">Komende orders</span><strong class="metric-value">{{ total_orders }}</strong></article>
+    <a class="metric metric-link" href="{{ business_central_current_week_orders_url() }}" target="_blank" rel="noopener noreferrer">
+        <span class="metric-label">Komende orders</span>
+        <strong class="metric-value">{{ total_orders }}</strong>
+    </a>
     <article class="metric metric-green"><span class="metric-label">Komende colli</span><strong class="metric-value">{{ total_colli }}</strong></article>
     <article class="metric"><span class="metric-label">Gemiddeld per order</span><strong class="metric-value">{{ (total_colli / total_orders) | round(1) if total_orders else 0 }}</strong></article>
-    <article class="metric metric-green"><span class="metric-label">Leverweken geladen</span><strong class="metric-value">{{ weeks | length }}</strong></article>
+    <a class="metric metric-green metric-link" href="#zero-colli-orders" onclick="document.getElementById('zero-colli-orders').showModal(); return false;">
+        <span class="metric-label">Geen colli-indeling</span>
+        <strong class="metric-value">{{ zero_colli_orders }}</strong>
+    </a>
 </section>
+
+<dialog class="order-dialog" id="zero-colli-orders">
+    <div class="order-dialog-header">
+        <div>
+            <p class="progress-kicker">Komende weken</p>
+            <h3>Geen colli-indeling</h3>
+        </div>
+        <button class="order-dialog-close" type="button" onclick="this.closest('dialog').close()" aria-label="Sluiten">&times;</button>
+    </div>
+    <div class="order-dialog-actions">
+        <p class="order-dialog-intro">Deze orders hebben nog geen colli-indeling.</p>
+        <a class="order-dialog-link" href="{{ business_central_zero_colli_url() }}" target="_blank" rel="noopener noreferrer">Open in BC</a>
+    </div>
+    <div class="order-dialog-list">
+        {% for order in zero_colli_order_details %}
+            <div class="order-dialog-item">
+                <strong><a href="{{ business_central_order_url(order['Nr.']) }}" target="_blank" rel="noopener">{{ order['Nr.'] }}</a></strong>
+                <span>{{ order['Naam'] }}</span>
+                <small>{{ (order['Status'] or '').replace('Released', 'Vrijgegeven') }}</small>
+            </div>
+        {% else %}
+            <div class="order-dialog-item">
+                <strong>—</strong>
+                <span>Er zijn geen orders zonder colli-indeling.</span>
+                <small>0 resultaten</small>
+            </div>
+        {% endfor %}
+    </div>
+</dialog>
 
 <section class="panel">
     <h2>Colli per leverweek</h2>

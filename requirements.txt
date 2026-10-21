@@ -1,0 +1,7 @@
+Flask
+O365
+msal
+pandas
+python-dotenv
+requests
+pycups; sys_platform == "linux"
