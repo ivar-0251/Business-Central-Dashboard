@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Verver - Orders{% endblock %}
+{% block title %}Verver - Verzendingen{% endblock %}
 
 {% block content %}
     {% set kiosk_weeks = [current_week - 1, current_week, current_week + 1] %}
@@ -9,7 +9,11 @@
             <p class="eyebrow">Verkooporders</p>
             <h1>Verzendingen</h1>
         </div>
-        <p class="period">Huidige week: {{ current_week }}</p>
+        <div class="agenda-navigation">
+            <a class="agenda-arrow agenda-arrow-previous" href="{{ url_for('verzendingen', week_offset=week_offset - 1) }}" aria-label="Vorige week"><span aria-hidden="true">&#8592;</span></a>
+            <p class="period" data-week-offset="{{ week_offset }}">Werkweek {{ current_week }}</p>
+            <a class="agenda-arrow agenda-arrow-next" href="{{ url_for('verzendingen', week_offset=week_offset + 1) }}" aria-label="Volgende week"><span aria-hidden="true">&#8594;</span></a>
+        </div>
     </section>
 
     <div class="kiosk-content">

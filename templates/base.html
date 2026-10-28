@@ -32,13 +32,27 @@
                 </div>
             </div>
             <nav class="site-nav" aria-label="Hoofdnavigatie">
-                <a href="{{ url_for('dashboard') }}">Colli</a>
+                <a href="{{ url_for('colli') }}">Colli</a>
                 <a href="{{ url_for('verzendingen') }}">Verzendingen</a>
-                <a href="{{ url_for('agenda_algemeen') }}">Agenda</a>
+                <details class="site-nav-dropdown">
+                    <summary>Agenda</summary>
+                    <div class="site-nav-dropdown-menu">
+                        <a href="{{ url_for('agenda_algemeen') }}">Algemeen</a>
+                        <a href="{{ url_for('agenda_planning') }}">Planning</a>
+                    </div>
+                </details>
             </nav>
         </header>
 
         {% block content %}{% endblock %}
     {% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('a[href*="businesscentral.dynamics.com"]').forEach(function (link) {
+                link.setAttribute('target', '_blank');
+                link.setAttribute('rel', 'noopener noreferrer');
+            });
+        });
+    </script>
 </body>
 </html>

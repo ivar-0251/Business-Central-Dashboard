@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Verver - Agenda{% endblock %}
+{% block title %}Verver - Agenda - {{ 'Planning' if calendar_name == 'planning' else 'Algemeen' }}{% endblock %}
 
 {% block content %}
 <section class="dashboard-heading">

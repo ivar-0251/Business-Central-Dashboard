@@ -21,6 +21,7 @@ from get_calendar import fetch_and_save_calendars
 import requests
 import json
 import time
+import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -49,7 +50,7 @@ def get_delivery_week_numbers():
 	today = date.today()
 	return [
 		(today + timedelta(weeks=week_offset)).isocalendar().week
-		for week_offset in range(-1, 9)
+		for week_offset in range(-5, 9)
 	]
 
 
@@ -93,6 +94,14 @@ def seconds_until_next_minute_mark(interval):
 
 
 if __name__ == "__main__":
+	if "--once" in sys.argv:
+		try:
+			fetch_and_save_sales_headers()
+			fetch_and_save_calendars()
+		except Exception as error:
+			print(f"Eénmalig ophalen mislukt: {error}")
+			raise SystemExit(1)
+
 	import threading
 
 	def update_sales_headers():

@@ -334,17 +334,21 @@ def load_dashboard_data():
     }, last_updated
 
 @app.route('/')
-@login_required
+# @login_required
 def index():
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('colli'))
 
 @app.route('/dashboard')
-@login_required
 def dashboard():
+    return redirect(url_for('colli'))
+
+@app.route('/colli')
+# @login_required
+def colli():
     data, last_updated = load_dashboard_data()
 
     return render_template(
-        'dashboard.html',
+        'colli.html',
         data=data,
         current_week=date.today().isocalendar().week,
         last_updated=last_updated,
@@ -352,7 +356,7 @@ def dashboard():
 
 
 @app.route('/dashboard/week-<int:weeknummer>')
-@login_required
+# @login_required
 def week_overview(weeknummer):
     data, last_updated = load_dashboard_data()
 
@@ -391,7 +395,7 @@ def week_overview(weeknummer):
 
 
 @app.route('/dashboard/hoofdorders/<int:weeknummer>')
-@login_required
+# @login_required
 def hoofdorders(weeknummer):
     data, last_updated = load_dashboard_data()
 
@@ -440,19 +444,22 @@ def hoofdorders(weeknummer):
     )
 
 @app.route('/verzendingen')
-@login_required
+# @login_required
 def verzendingen():
     data, last_updated = load_dashboard_data()
+    week_offset = request.args.get('week_offset', default=0, type=int)
+    selected_week = date.today() - timedelta(days=date.today().weekday()) + timedelta(weeks=week_offset)
 
     return render_template(
         'verzendingen.html',
         data=data,
-        current_week=date.today().isocalendar().week,
+        current_week=selected_week.isocalendar().week,
+        week_offset=week_offset,
         last_updated=last_updated,
     )
 
 @app.route('/kiosk/display-1')
-@login_required
+# @login_required
 def kiosk_display_1():
     data, last_updated = load_dashboard_data()
 
@@ -464,7 +471,7 @@ def kiosk_display_1():
     )
 
 @app.route('/kiosk/display-2')
-@login_required
+# @login_required
 def kiosk_display_2():
     data, last_updated = load_dashboard_data()
 
@@ -537,16 +544,26 @@ def load_calendar_view_data(week_offset=0, calendar_name='algemeen'):
 
 
 @app.route('/agenda')
-@login_required
+# @login_required
 def agenda():
     return redirect(url_for('agenda_algemeen'))
 
 
 @app.route('/agenda/algemeen')
-@login_required
+# @login_required
 def agenda_algemeen():
+    return render_agenda('algemeen')
+
+
+@app.route('/agenda/planning')
+# @login_required
+def agenda_planning():
+    return render_agenda('planning')
+
+
+def render_agenda(default_calendar):
     week_offset = request.args.get('week_offset', default=0, type=int)
-    calendar_name = request.args.get('calendar', default='algemeen')
+    calendar_name = request.args.get('calendar', default=default_calendar)
     if calendar_name not in {'algemeen', 'planning'}:
         abort(404)
     calendar_days, spanning_events = load_calendar_view_data(week_offset, calendar_name)
@@ -563,7 +580,7 @@ def agenda_algemeen():
 
 
 @app.route('/kiosk/display-3')
-@login_required
+# @login_required
 def kiosk_display_3():
     calendar_days, spanning_events = load_calendar_view_data(calendar_name='algemeen')
 
@@ -577,7 +594,7 @@ def kiosk_display_3():
 
 
 @app.route('/kiosk/display-3.1')
-@login_required
+# @login_required
 def kiosk_display_3_1():
     calendar_days, spanning_events = load_calendar_view_data(
         week_offset=1,
@@ -595,7 +612,7 @@ def kiosk_display_3_1():
 
 
 @app.route('/kiosk/display-4')
-@login_required
+# @login_required
 def kiosk_display_4():
     calendar_days, spanning_events = load_calendar_view_data(calendar_name='planning')
 
@@ -609,7 +626,7 @@ def kiosk_display_4():
 
 
 @app.route('/kiosk/display-4.1')
-@login_required
+# @login_required
 def kiosk_display_4_1():
     calendar_days, spanning_events = load_calendar_view_data(
         week_offset=1,
