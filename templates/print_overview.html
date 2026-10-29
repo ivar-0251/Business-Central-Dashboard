@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Verver - Printoverzicht week {{ current_week }}{% endblock %}
+
+{% block content %}
+{% set weeks = data.weekgegevens %}
+{% set total_orders = weeks | sum(attribute='orders') %}
+{% set total_colli = weeks | sum(attribute='colli') %}
+{% set zero_orders = data.zero_colli_order_details %}
+
+<main class="print-page">
+    <div class="print-toolbar">
+        <button type="button" onclick="window.print()">Afdrukken / opslaan als PDF</button>
+        <span>Dit overzicht wordt automatisch geopend in de printdialoog.</span>
+    </div>
+
+    <header class="print-heading">
+        <div>
+            <p class="eyebrow">Verver Export</p>
+            <h1>Dagoverzicht</h1>
+        </div>
+        <div class="print-meta">
+            <strong>Leverweek {{ current_week }}</strong>
+            <span>Bijgewerkt {{ last_updated }}</span>
+        </div>
+    </header>
+
+    <section class="print-grid print-summary" aria-label="Samenvatting">
+        <article class="print-card">
+            <span>Komende orders</span>
+            <strong>{{ total_orders }}</strong>
+        </article>
+        <article class="print-card print-card-green">
+            <span>Komende colli</span>
+            <strong>{{ total_colli }}</strong>
+        </article>
+        <article class="print-card">
+            <span>Geen colli-indeling</span>
+            <strong>{{ data.zero_colli_orders }}</strong>
+        </article>
+        <article class="print-card print-card-green">
+            <span>Week {{ current_week }}: orders / colli</span>
+            <strong>{{ current_week_summary.orders }} / {{ current_week_summary.colli }}</strong>
+        </article>
+    </section>
+
+    <div class="print-columns">
+        <section class="print-section">
+            <h2>Verzendingen week {{ current_week }}</h2>
+            <div class="print-status-grid">
+                <div><strong>{{ current_week_summary.shipped }}</strong><span>Verzonden</span></div>
+                <div><strong>{{ current_week_summary.orderpick }}</strong><span>In behandeling</span></div>
+                <div><strong>{{ current_week_summary.missing }}</strong><span>Niet in behandeling</span></div>
+            </div>
+            <p class="print-small">
+                Totaal: {{ current_week_summary.orders }} orders.
+                {% if current_week_summary.orders %}
+                {{ ((current_week_summary.shipped / current_week_summary.orders) * 100) | round(0) | int }}% verzonden.
+                {% endif %}
+            </p>
+        </section>
+
+        <section class="print-section">
+            <h2>Colli per leverweek</h2>
+            <table class="print-table">
+                <thead><tr><th>Week</th><th>Orders</th><th>Colli</th><th>Gem. per order</th></tr></thead>
+                <tbody>
+                    {% for week in weeks %}
+                    <tr{% if week.week == current_week %} class="print-current"{% endif %}>
+                        <th>Week {{ week.week }}</th>
+                        <td>{{ week.orders }}</td>
+                        <td>{{ week.colli }}</td>
+                        <td>{{ week.gemiddelde }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">Geen komende leverweken gevonden.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="print-section print-zero-section">
+            <h2>Orders zonder colli-indeling</h2>
+            <div class="print-zero-list">
+                {% for order in zero_orders %}
+                <div><strong>{{ order['Nr.'] }}</strong><span>{{ order['Naam'] }}</span></div>
+                {% else %}
+                <p class="print-small">Geen orders zonder colli-indeling.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="print-bottom-grid">
+        <section class="print-section">
+            <h2>Orderverdeling week {{ current_week }}</h2>
+            <div class="print-order-types">
+                <div><strong>{{ current_week_details.hoofdorders if current_week_details else 0 }}</strong><span>Hoofdorders</span></div>
+                <div><strong>{{ current_week_details.meeliftorders if current_week_details else 0 }}</strong><span>Meeliftorders</span></div>
+                <div><strong>{{ current_week_details.losstaande_orders if current_week_details else 0 }}</strong><span>Losstaande orders</span></div>
+            </div>
+        </section>
+
+        <section class="print-section">
+            <h2>Aandachtspunten</h2>
+            <ul class="print-attention-list">
+                <li{% if data.zero_colli_orders %} class="print-attention-warning"{% endif %}>
+                    <strong>{{ data.zero_colli_orders }}</strong> orders zonder colli-indeling
+                </li>
+                <li{% if current_week_summary.colli > 9000 %} class="print-attention-warning"{% endif %}>
+                    <strong>{{ current_week_summary.colli }}</strong> colli in week {{ current_week }}
+                    {% if current_week_summary.colli > 9000 %}(boven 9.000){% endif %}
+                </li>
+            </ul>
+        </section>
+
+        <section class="print-section print-next-event-section">
+            <h2>Volgende op de planning</h2>
+            {% if next_planning_event %}
+            <div class="print-next-event">
+                <strong>{{ next_planning_event.subject }}</strong>
+                <span>{{ next_planning_event.date }} om {{ next_planning_event.time }}</span>
+                {% if next_planning_event.location %}
+                <span>{{ next_planning_event.location }}</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="print-small">Geen komende afspraken gevonden.</p>
+            {% endif %}
+        </section>
+    </div>
+</main>
+
+{% if auto_print %}
+<script>
+    let hasReturned = false;
+    const returnToPreviousPage = function () {
+        if (hasReturned) return;
+        hasReturned = true;
+        window.location.assign({{ return_to | tojson }});
+    };
+
+    window.addEventListener("load", function () {
+        window.setTimeout(function () { window.print(); }, 150);
+    });
+    window.addEventListener("afterprint", returnToPreviousPage);
+</script>
+{% endif %}
+{% endblock %}

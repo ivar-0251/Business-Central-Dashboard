@@ -10,8 +10,8 @@ from pathlib import Path
 import pandas as pd
 import json
 import re
-from urllib.parse import quote
-from get_calendar import get_calendar_events
+from urllib.parse import quote, urlsplit
+from get_calendar import DUTCH_TIMEZONE, get_calendar_events
 from authenticator import login_required
 
 load_dotenv()  # Load environment variables from .env file
@@ -355,6 +355,40 @@ def colli():
     )
 
 
+def get_next_planning_event():
+    """Return the first upcoming planning event, excluding Weekstart."""
+    now_local = datetime.now(DUTCH_TIMEZONE)
+    now = now_local.replace(tzinfo=None)
+    current_week_start = now_local.date() - timedelta(days=now_local.weekday())
+    upcoming_events = []
+
+    for week_offset in range(5):
+        week_start = current_week_start + timedelta(weeks=week_offset)
+        for event in get_calendar_events(week_start, 'planning'):
+            subject = (event.get('subject') or '').strip()
+            if subject.casefold() == 'weekstart':
+                continue
+            start_text = event.get('start', {}).get('dateTime', '')
+            try:
+                event_start = datetime.fromisoformat(start_text.replace('Z', '+00:00'))
+            except ValueError:
+                continue
+            if event_start.tzinfo is not None:
+                event_start = event_start.replace(tzinfo=None)
+            if event_start >= now:
+                upcoming_events.append((event_start, event))
+
+    if not upcoming_events:
+        return None
+
+    event_start, event = min(upcoming_events, key=lambda item: item[0])
+    return {
+        'subject': (event.get('subject') or 'Zonder titel').strip(),
+        'date': event_start.strftime('%d-%m-%Y'),
+        'time': 'Hele dag' if event.get('isAllDay') else event_start.strftime('%H:%M'),
+        'location': (event.get('location') or {}).get('displayName', ''),
+    }
+
 @app.route('/dashboard/week-<int:weeknummer>')
 # @login_required
 def week_overview(weeknummer):
@@ -448,13 +482,70 @@ def hoofdorders(weeknummer):
 def verzendingen():
     data, last_updated = load_dashboard_data()
     week_offset = request.args.get('week_offset', default=0, type=int)
-    selected_week = date.today() - timedelta(days=date.today().weekday()) + timedelta(weeks=week_offset)
+    selected_week = (
+        datetime.now(DUTCH_TIMEZONE).date()
+        - timedelta(days=datetime.now(DUTCH_TIMEZONE).weekday())
+        + timedelta(weeks=week_offset)
+    )
 
     return render_template(
         'verzendingen.html',
         data=data,
         current_week=selected_week.isocalendar().week,
         week_offset=week_offset,
+        last_updated=last_updated,
+    )
+
+@app.route('/print-data')
+# @login_required
+def print_overview():
+    """Render a one-page overview for printing or saving as PDF."""
+    data, last_updated = load_dashboard_data()
+    current_week = date.today().isocalendar().week
+    current_week_orders = [
+        order for order in data['orders']
+        if str(order.get('Leverweek', '')).strip() == str(current_week)
+    ]
+
+    shipped_count = sum(order.get('Verzonden') == 1 for order in current_week_orders)
+    orderpick_count = sum(
+        order.get('Verzonden') != 1
+        and order.get('Mag. Verzending bestaat.') == 1
+        for order in current_week_orders
+    )
+    current_week_summary = {
+        'orders': len(current_week_orders),
+        'colli': next(
+            (week['colli'] for week in data['weekgegevens'] if week['week'] == current_week),
+            0,
+        ),
+        'shipped': shipped_count,
+        'orderpick': orderpick_count,
+        'missing': len(current_week_orders) - shipped_count - orderpick_count,
+    }
+    current_week_details = next(
+        (week for week in data['weekgegevens'] if week['week'] == current_week),
+        None,
+    )
+    return_to = request.args.get('return_to') or request.referrer or url_for('colli')
+    parsed_return_to = urlsplit(return_to)
+    if (
+        parsed_return_to.scheme
+        or parsed_return_to.netloc
+        or not parsed_return_to.path.startswith('/')
+        or parsed_return_to.path.startswith('//')
+    ):
+        return_to = url_for('colli')
+
+    return render_template(
+        'print_overview.html',
+        data=data,
+        current_week=current_week,
+        current_week_summary=current_week_summary,
+        current_week_details=current_week_details,
+        next_planning_event=get_next_planning_event(),
+        auto_print=not request.args.get('embed'),
+        return_to=return_to,
         last_updated=last_updated,
     )
 
@@ -466,7 +557,7 @@ def kiosk_display_1():
     return render_template(
         'kiosk_display_1.html',
         data=data,
-        current_week=date.today().isocalendar().week,
+        current_week=datetime.now(DUTCH_TIMEZONE).date().isocalendar().week,
         last_updated=last_updated,
     )
 
@@ -490,7 +581,7 @@ def load_calendar_view_data(week_offset=0, calendar_name='algemeen'):
 
     **Returns:** A tuple containing calendar days and spanning events.
     """
-    today = date.today()
+    today = datetime.now(DUTCH_TIMEZONE).date()
     week_start = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     week_end = week_start + timedelta(days=5)
     weekday_names = [
@@ -600,7 +691,7 @@ def kiosk_display_3_1():
         week_offset=1,
         calendar_name='algemeen',
     )
-    next_week = date.today() + timedelta(weeks=1)
+    next_week = datetime.now(DUTCH_TIMEZONE).date() + timedelta(weeks=1)
 
     return render_template(
         'kiosk_display_3.html',
@@ -620,7 +711,7 @@ def kiosk_display_4():
         'kiosk_display_4.html',
         calendar_days=calendar_days,
         spanning_events=spanning_events,
-        current_week=date.today().isocalendar().week,
+        current_week=datetime.now(DUTCH_TIMEZONE).date().isocalendar().week,
         calendar_name='planning',
     )
 
@@ -632,7 +723,7 @@ def kiosk_display_4_1():
         week_offset=1,
         calendar_name='planning',
     )
-    next_week = date.today() + timedelta(weeks=1)
+    next_week = datetime.now(DUTCH_TIMEZONE).date() + timedelta(weeks=1)
 
     return render_template(
         'kiosk_display_4.html',

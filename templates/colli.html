@@ -2,6 +2,10 @@
 
 {% block title %}Verver - Colli{% endblock %}
 
+{% block header_actions_extra %}
+<button class="print-toolbar-button" type="button" onclick="printOverview()">Afdrukken / opslaan als PDF</button>
+{% endblock %}
+
 {% block content %}
 {% set weeks = data.weekgegevens %}
 {% set total_orders = weeks | sum(attribute='orders') %}
@@ -15,7 +19,9 @@
         <p class="eyebrow">Verkooporders</p>
         <h1>Colli</h1>
     </div>
-    <p class="period">Vanaf week {{ current_week }}<br>{{ weeks | length }} leverweken in beeld</p>
+    <div class="page-heading-actions">
+        <p class="period">Vanaf week {{ current_week }}<br>{{ weeks | length }} leverweken in beeld</p>
+    </div>
 </section>
 
 <section class="metrics" aria-label="Samenvatting">

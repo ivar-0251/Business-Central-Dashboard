@@ -2,6 +2,10 @@
 
 {% block title %}Verver - Verzendingen{% endblock %}
 
+{% block header_actions_extra %}
+<button class="print-toolbar-button" type="button" onclick="printOverview()">Afdrukken / opslaan als PDF</button>
+{% endblock %}
+
 {% block content %}
     {% set kiosk_weeks = [current_week - 1, current_week, current_week + 1] %}
     <section class="dashboard-heading">
@@ -9,7 +13,7 @@
             <p class="eyebrow">Verkooporders</p>
             <h1>Verzendingen</h1>
         </div>
-        <div class="agenda-navigation">
+        <div class="agenda-navigation week-navigation">
             <a class="agenda-arrow agenda-arrow-previous" href="{{ url_for('verzendingen', week_offset=week_offset - 1) }}" aria-label="Vorige week"><span aria-hidden="true">&#8592;</span></a>
             <p class="period" data-week-offset="{{ week_offset }}">Werkweek {{ current_week }}</p>
             <a class="agenda-arrow agenda-arrow-next" href="{{ url_for('verzendingen', week_offset=week_offset + 1) }}" aria-label="Volgende week"><span aria-hidden="true">&#8594;</span></a>
@@ -24,9 +28,17 @@
         {% set shipped_count = shipped_orders | length %}
         {% set pending_orders = total_orders %}
         {% set orderpick_count = namespace(value=0) %}
+        {% set shipped_order_numbers = namespace(values=[]) %}
+        {% set orderpick_order_numbers = namespace(values=[]) %}
+        {% set missing_order_numbers = namespace(values=[]) %}
         {% for order in week_orders %}
-        {% if order['Mag. Verzending bestaat.'] == 1 and order['Verzonden'] != 1 %}
+        {% if order['Verzonden'] == 1 %}
+        {% set _ = shipped_order_numbers.values.append(order['Nr.']) %}
+        {% elif order['Mag. Verzending bestaat.'] == 1 %}
         {% set orderpick_count.value = orderpick_count.value + 1 %}
+        {% set _ = orderpick_order_numbers.values.append(order['Nr.']) %}
+        {% else %}
+        {% set _ = missing_order_numbers.values.append(order['Nr.']) %}
         {% endif %}
         {% endfor %}
         {% set missing_orderpick_count = pending_orders - shipped_count - orderpick_count.value %}
@@ -36,7 +48,7 @@
         {% set missing_orderpick_percentage = ((100 - shipped_percentage - orderpick_percentage) | round(1)) if missing_orderpick_count > 0 and (100 - shipped_percentage - orderpick_percentage) > 0 else 0.0 %}
         {% set orderpick_percentage_display = orderpick_percentage | int if orderpick_percentage == (orderpick_percentage | int) else orderpick_percentage %}
         {% set missing_orderpick_percentage_display = missing_orderpick_percentage | int if missing_orderpick_percentage == (missing_orderpick_percentage | int) else missing_orderpick_percentage %}
-        <section class="progress-week" aria-labelledby="progress-title-{{ week_number }}">
+        <section class="progress-week{% if week_number == current_week %} progress-week-current{% endif %}" aria-labelledby="progress-title-{{ week_number }}">
             <div
                 class="metric {% if week_number == current_week %}metric-green progress-card-current{% else %}metric-orange{% endif %} progress-card"
                 aria-labelledby="progress-title-{{ week_number }}">
@@ -112,7 +124,10 @@
                         <button class="order-dialog-close" type="button" onclick="this.closest('dialog').close()"
                             aria-label="Sluiten">&times;</button>
                     </div>
-                    <p class="order-dialog-intro">Deze orders zijn verzonden.</p>
+                    <div class="order-dialog-actions">
+                        <p class="order-dialog-intro">Deze orders zijn verzonden.</p>
+                        <a class="order-dialog-link" href="{{ business_central_week_orders_url(shipped_order_numbers.values, week_number) }}" target="_blank" rel="noopener noreferrer">Open in BC</a>
+                    </div>
                     <div class="order-dialog-list">
                         {% for order in shipped_orders %}
                             <div class="order-dialog-item">
@@ -132,7 +147,10 @@
                         <button class="order-dialog-close" type="button" onclick="this.closest('dialog').close()"
                             aria-label="Sluiten">&times;</button>
                     </div>
-                    <p class="order-dialog-intro">Deze orders hebben een magazijnverzending en zijn nog niet verzonden.</p>
+                    <div class="order-dialog-actions">
+                        <p class="order-dialog-intro">Deze orders hebben een magazijnverzending en zijn nog niet verzonden.</p>
+                        <a class="order-dialog-link" href="{{ business_central_week_orders_url(orderpick_order_numbers.values, week_number) }}" target="_blank" rel="noopener noreferrer">Open in BC</a>
+                    </div>
                     <div class="order-dialog-list">
                         {% for order in week_orders %}
                             {% if order['Verzonden'] != 1 and order['Mag. Verzending bestaat.'] == 1 %}
@@ -155,7 +173,10 @@
                         <button class="order-dialog-close" type="button" onclick="this.closest('dialog').close()"
                             aria-label="Sluiten">&times;</button>
                     </div>
-                    <p class="order-dialog-intro">Deze orders zijn nog niet verzonden en hebben geen magazijnverzending.</p>
+                    <div class="order-dialog-actions">
+                        <p class="order-dialog-intro">Deze orders zijn nog niet verzonden en hebben geen magazijnverzending.</p>
+                        <a class="order-dialog-link" href="{{ business_central_week_orders_url(missing_order_numbers.values, week_number) }}" target="_blank" rel="noopener noreferrer">Open in BC</a>
+                    </div>
                     <div class="order-dialog-list">
                         {% for order in week_orders %}
                             {% if order['Verzonden'] != 1 and order['Mag. Verzending bestaat.'] != 1 %}

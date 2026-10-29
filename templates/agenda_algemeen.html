@@ -19,7 +19,7 @@
 </section>
 
 <div class="agenda-stage">
-    <button class="agenda-arrow agenda-arrow-previous" type="button" id="agenda-previous-week"
+    <button class="agenda-arrow agenda-arrow-previous agenda-week-arrow" type="button" id="agenda-previous-week"
         aria-label="Vorige week"><span aria-hidden="true">&#8592;</span></button>
     <section class="panel" aria-label="Werkweekagenda">
     {% include "_calendar_legend.html" %}
@@ -86,7 +86,7 @@
         </div>
     </div>
     </section>
-    <button class="agenda-arrow agenda-arrow-next" type="button" id="agenda-next-week"
+    <button class="agenda-arrow agenda-arrow-next agenda-week-arrow" type="button" id="agenda-next-week"
         aria-label="Volgende week"><span aria-hidden="true">&#8594;</span></button>
 </div>
 
@@ -122,10 +122,10 @@
                 });
         };
 
-        const previousWeekButton = document.getElementById('agenda-previous-week');
-        const nextWeekButton = document.getElementById('agenda-next-week');
         const previousDayButton = document.getElementById('agenda-previous-day');
         const nextDayButton = document.getElementById('agenda-next-day');
+        const previousWeekButton = document.getElementById('agenda-previous-week');
+        const nextWeekButton = document.getElementById('agenda-next-week');
         const selectedDayLabel = document.getElementById('agenda-selected-day');
         let weekOffset = Number(document.querySelector('.period').dataset.weekOffset);
         let selectedDay = 0;
@@ -138,8 +138,8 @@
             });
             const selectedHeader = document.querySelector(`.calendar-day[data-day-index="${selectedDay}"] h2`);
             selectedDayLabel.textContent = selectedHeader ? selectedHeader.textContent : '';
-            previousDayButton.disabled = selectedDay === 0;
-            nextDayButton.disabled = selectedDay === dayCount - 1;
+            previousDayButton.disabled = false;
+            nextDayButton.disabled = false;
         };
 
         const fetchWeek = offset => fetch(`{{ url_for('agenda_algemeen') }}?week_offset=${offset}&calendar={{ calendar_name }}`)
@@ -149,34 +149,89 @@
             })
             .then(html => {
                 const page = new DOMParser().parseFromString(html, 'text/html');
-                return {
-                    panel: page.querySelector('.panel'),
-                    period: page.querySelector('.period').textContent,
-                };
+                const panel = page.querySelector('.panel');
+                const period = page.querySelector('.period');
+                if (!panel || !period) throw new Error('Ongeldige agendarespons.');
+                return { panel, period: period.textContent };
             });
 
-        const setNavigationBusy = isBusy => {
-            previousWeekButton.disabled = isBusy;
-            nextWeekButton.disabled = isBusy;
-        };
-
         const showWeek = offset => {
-            setNavigationBusy(true);
+            previousWeekButton.disabled = true;
+            nextWeekButton.disabled = true;
             return fetchWeek(offset).then(agenda => {
-                document.querySelector('.panel').replaceWith(agenda.panel.cloneNode(true));
-                const period = document.querySelector('.period');
-                period.textContent = agenda.period;
-                period.dataset.weekOffset = offset;
+                document.querySelector('.panel').replaceWith(agenda.panel);
+                document.querySelector('.period').textContent = agenda.period;
                 weekOffset = offset;
+                document.querySelector('.period').dataset.weekOffset = weekOffset;
                 loadWeather();
                 setSelectedDay(0);
-            }).catch(() => {}).finally(() => setNavigationBusy(false));
+            }).catch(error => console.error(error)).finally(() => {
+                previousWeekButton.disabled = false;
+                nextWeekButton.disabled = false;
+            });
         };
 
         previousWeekButton.addEventListener('click', () => showWeek(weekOffset - 1));
         nextWeekButton.addEventListener('click', () => showWeek(weekOffset + 1));
-        previousDayButton.addEventListener('click', () => setSelectedDay(selectedDay - 1));
-        nextDayButton.addEventListener('click', () => setSelectedDay(selectedDay + 1));
+        previousDayButton.addEventListener('click', () => {
+            if (selectedDay > 0) {
+                setSelectedDay(selectedDay - 1);
+                return;
+            }
+
+            previousDayButton.disabled = true;
+            fetch(`{{ url_for('agenda_algemeen') }}?week_offset=${weekOffset - 1}&calendar={{ calendar_name }}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Vorige werkweek kon niet worden geladen.');
+                    return response.text();
+                })
+                .then(html => {
+                    const page = new DOMParser().parseFromString(html, 'text/html');
+                    const panel = page.querySelector('.panel');
+                    const period = page.querySelector('.period');
+                    if (!panel || !period) throw new Error('Ongeldige agendarespons.');
+                    document.querySelector('.panel').replaceWith(panel);
+                    document.querySelector('.period').textContent = period.textContent;
+                    weekOffset -= 1;
+                    document.querySelector('.period').dataset.weekOffset = weekOffset;
+                    loadWeather();
+                    setSelectedDay(4);
+                })
+                .catch(error => {
+                    console.error(error);
+                    previousDayButton.disabled = false;
+                });
+        });
+        nextDayButton.addEventListener('click', () => {
+            const dayCount = document.querySelectorAll('.calendar-day').length;
+            if (selectedDay < dayCount - 1) {
+                setSelectedDay(selectedDay + 1);
+                return;
+            }
+
+            nextDayButton.disabled = true;
+            fetch(`{{ url_for('agenda_algemeen') }}?week_offset=${weekOffset + 1}&calendar={{ calendar_name }}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Volgende werkweek kon niet worden geladen.');
+                    return response.text();
+                })
+                .then(html => {
+                    const page = new DOMParser().parseFromString(html, 'text/html');
+                    const panel = page.querySelector('.panel');
+                    const period = page.querySelector('.period');
+                    if (!panel || !period) throw new Error('Ongeldige agendarespons.');
+                    document.querySelector('.panel').replaceWith(panel);
+                    document.querySelector('.period').textContent = period.textContent;
+                    weekOffset += 1;
+                    document.querySelector('.period').dataset.weekOffset = weekOffset;
+                    loadWeather();
+                    setSelectedDay(0);
+                })
+                .catch(error => {
+                    console.error(error);
+                    nextDayButton.disabled = false;
+                });
+        });
 
         const todayIndex = [...document.querySelectorAll('.calendar-day')].findIndex(day => day.classList.contains('calendar-day-today'));
         setSelectedDay(todayIndex >= 0 ? todayIndex : 0);

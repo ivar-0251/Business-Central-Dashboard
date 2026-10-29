@@ -30,6 +30,8 @@ from pathlib import Path
 # variables
 #################################
 
+MINUTE_INTERVAL = 2
+
 API_CLIENT_ID = env["api_client_id"]
 API_CLIENT_SECRET = env["api_client_secret"]
 API_TENANT_ID = env["api_tenant_id"]
@@ -106,7 +108,7 @@ if __name__ == "__main__":
 
 	def update_sales_headers():
 		while True:
-			time.sleep(seconds_until_next_minute_mark(5))
+			time.sleep(seconds_until_next_minute_mark(MINUTE_INTERVAL))
 			try:
 				fetch_and_save_sales_headers()
 			except Exception as error:
@@ -114,7 +116,7 @@ if __name__ == "__main__":
 
 	def update_calendars():
 		while True:
-			time.sleep(seconds_until_next_minute_mark(5))
+			time.sleep(seconds_until_next_minute_mark(MINUTE_INTERVAL))
 			try:
 				fetch_and_save_calendars()
 			except Exception as error:
